@@ -1,0 +1,24 @@
+metadata:
+  name: "Read-Only Policy"
+  version: "1.0"
+  description: "Filesystem read-only access"
+  author: "security-team"
+
+boundaries:
+  tool:
+    allowed_tools: []
+    denied_tools: []
+
+  filesystem:
+    allowed_paths:
+      - /tmp
+      - /var/tmp
+    denied_paths:
+      - /etc
+      - /root
+    read_only: true
+
+  network:
+    network_enabled: false
+    allowed_domains: []
+    denied_domains: []
