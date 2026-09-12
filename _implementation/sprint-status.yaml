@@ -1,0 +1,100 @@
+# Sprint Status - APCV MVP (3 Weeks)
+# Last Updated: 2026-09-12
+
+development_status:
+  # EPIC 1: Week 1 - Core Infrastructure
+  epic-1:
+    title: "Week 1: Core Infrastructure"
+    status: "backlog"
+    stories_count: 2
+
+  1-1-project-setup:
+    title: "Framework Setup & Tool Discovery Foundation"
+    epic: "Week 1: Core Infrastructure"
+    description: "Establish project scaffolding, implement LangGraph AST parser, and discover static tool surface"
+    status: "ready-for-dev"
+    last_updated: "2026-09-12"
+    spec_checkpoint: "CAP-1 (Tool Surface Discovery - static layer only)"
+    story_file: "_implementation/1-1-project-setup.md"
+
+  1-2-policy-dsl:
+    title: "Policy DSL & Validation Engine"
+    epic: "Week 1: Policy Foundation"
+    description: "Design and implement Policy DSL (YAML schema), validator, and error reporting"
+    status: "ready-for-dev"
+    last_updated: "2026-09-12"
+    spec_checkpoint: "Policy declaration layer"
+    story_file: "_implementation/1-2-policy-dsl.md"
+
+  # EPIC 2: Week 1-2 - Dynamic Testing & Execution
+  epic-2:
+    title: "Week 1-2: Dynamic Testing & Execution"
+    status: "backlog"
+    stories_count: 3
+
+  2-1-probe-rules:
+    title: "Probe Rules Library & Policy-Relative Generation"
+    epic: "Week 1-2: Dynamic Testing Foundation"
+    description: "Build 20-30 deterministic probe rules and policy-relative generation logic"
+    status: "ready-for-dev"
+    last_updated: "2026-09-12"
+    spec_checkpoint: "CAP-2 (Policy-Relative Probe Generation)"
+    story_file: "_implementation/2-1-probe-rules.md"
+
+  2-2-isolated-execution:
+    title: "Isolated Execution & Parameter Tracing"
+    epic: "Week 2: Dynamic Validation"
+    description: "Implement Docker-based probe executor and wrapt parameter tracing"
+    status: "ready-for-dev"
+    last_updated: "2026-09-12"
+    spec_checkpoint: "CAP-3 (Isolated Probe Execution & Parameter Tracing)"
+    story_file: "_implementation/2-2-isolated-execution.md"
+
+  2-3-conformance-check:
+    title: "Conformance Check & Diff Report Generation"
+    epic: "Week 2: Verdict & Reporting"
+    description: "Implement conformance checker and policy validation rules"
+    status: "ready-for-dev"
+    last_updated: "2026-09-12"
+    spec_checkpoint: "CAP-4 (Conformance Check & Diff Report)"
+    story_file: "_implementation/2-3-conformance-check.md"
+
+  # EPIC 3: Week 3 - Interfaces & Demo
+  epic-3:
+    title: "Week 3: Interfaces & Demo"
+    status: "backlog"
+    stories_count: 3
+
+  3-1-cli-tool:
+    title: "CLI Tool (apcv validate)"
+    epic: "Week 3: User Interface & CI/CD Integration"
+    description: "Implement command-line interface for validating Agents"
+    status: "ready-for-dev"
+    last_updated: "2026-09-12"
+    spec_checkpoint: "CAP-5 (CLI interface)"
+    story_file: "_implementation/3-1-cli-tool.md"
+
+  3-2-web-ui:
+    title: "Web UI (Dashboard, Policy Editor, Reports)"
+    epic: "Week 3: User Interface & Visualization"
+    description: "Implement web dashboard showing Agent compliance and policy management"
+    status: "ready-for-dev"
+    last_updated: "2026-09-12"
+    spec_checkpoint: "CAP-5, CAP-6 (Web UI interface)"
+    story_file: "_implementation/3-2-web-ui.md"
+
+  3-3-demo-docs:
+    title: "E2E Demo & Documentation"
+    epic: "Week 3: Demo & Delivery"
+    description: "Create end-to-end demo and comprehensive documentation"
+    status: "ready-for-dev"
+    last_updated: "2026-09-12"
+    spec_checkpoint: "Demonstrates all capabilities working together"
+    story_file: "_implementation/3-3-demo-docs.md"
+
+# STATUS DEFINITIONS:
+# backlog       - Ready for dev, awaiting assignment
+# ready-for-dev - Comprehensive context created, awaiting developer
+# in-progress   - Actively being developed
+# review        - Complete, awaiting code review
+# done          - Complete and approved

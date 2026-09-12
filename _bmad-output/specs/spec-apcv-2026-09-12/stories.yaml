@@ -1,0 +1,379 @@
+stories:
+  - id: story-1
+    title: "Framework Setup & Tool Discovery Foundation"
+    epic: "Week 1: Core Infrastructure"
+
+    description: |
+      Establish project scaffolding, implement LangGraph AST parser, and discover static tool surface.
+      Includes build pipeline, testing framework, and basic tool registry.
+
+    spec_checkpoint: |
+      Completes CAP-1 (Tool Surface Discovery - static layer only)
+      Lays foundation for CAP-2, CAP-3, CAP-5
+
+    done_checkpoint: |
+      ✅ GitHub repo initialized with CI/CD (GitHub Actions)
+      ✅ LangGraph @tool decorator extraction via AST (>95% accuracy on test suite)
+      ✅ Tool SBOM JSON output format defined and tested
+      ✅ Unit tests for tool discovery (coverage >80%)
+      ✅ No runtime capability detection yet (defer to story-3)
+
+    invoke_dev_with: |
+      - Set up monorepo structure: /apcv/{core,cli,ui,tests,docs}
+      - Implement ToolDiscovery.discover_static() using ast + tree-sitter
+      - Create fixtures: 5-10 sample LangGraph agents for testing
+      - Integration tests: validate SBOM accuracy against known tool sets
+
+    user_story: "As a DevOps engineer, I want the validator to automatically discover what tools a LangGraph Agent can invoke, so I can understand the complete capability surface before creating policy."
+
+    acceptance_criteria:
+      - Tool discovery finds all @tool decorators in LangGraph code
+      - Output is valid JSON matching schema
+      - Processing time <10 seconds on typical Agent code
+      - No false positives (undeclared tools marked as found)
+
+    estimate_days: 3
+    assignee: backend-team
+    priority: critical
+
+  - id: story-2
+    title: "Policy DSL & Validation Engine"
+    epic: "Week 1: Policy Foundation"
+
+    description: |
+      Design and implement Policy DSL (YAML schema), validator, and error reporting.
+      Enable developers to declare Agent constraints in a standard format.
+
+    spec_checkpoint: |
+      Completes policy declaration layer (input to CAP-2 and CAP-4)
+      Enables policy-driven validation for all downstream stories
+
+    done_checkpoint: |
+      ✅ Policy YAML schema defined (tools, filesystem, network, parameters, rate_limits, privilege, compliance)
+      ✅ Schema validator (jsonschema validation against canonical schema)
+      ✅ Error reporting (friendly messages for policy violations)
+      ✅ Policy examples: read-only, github-api, internal-admin archetypes
+      ✅ Unit tests: valid and invalid policies (coverage >80%)
+
+    invoke_dev_with: |
+      - Define schema in YAML (reference: policy-dsl-schema.md companion)
+      - Implement PolicyValidator class using jsonschema library
+      - Create 3-5 reference policy templates
+      - Add IDE integration hints (VS Code schema support, JSON schema endpoint)
+
+    user_story: "As a security engineer, I want to declare Agent policy constraints in a standard YAML format, so I can version control policies and integrate them into CI/CD."
+
+    acceptance_criteria:
+      - Valid policy YAML parses without error
+      - Invalid policy produces clear error message
+      - Policy can be applied to multiple Agents
+      - Schema supports all constraint types (tools, filesystem, network, privilege, rate limits)
+
+    estimate_days: 2.5
+    assignee: backend-team
+    priority: critical
+
+  - id: story-3
+    title: "Probe Rules Library & Policy-Relative Generation"
+    epic: "Week 1-2: Dynamic Testing Foundation"
+
+    description: |
+      Build 20-30 deterministic probe rules covering filesystem, tool invocation, privilege escalation,
+      and network categories. Implement probe generator that creates policy-relative test cases.
+
+    spec_checkpoint: |
+      Completes CAP-2 (Policy-Relative Probe Generation)
+      Enables probe execution and conformance checking in story-4+
+
+    done_checkpoint: |
+      ✅ 20-30 probe rules implemented (hardcoded, not LLM-generated)
+      ✅ Probe generator selects rules based on policy constraints
+      ✅ Policy-relative logic: probes adapt to declared policy boundaries
+      ✅ Probe JSON format: id, category, description, test_command, expected_outcome
+      ✅ Unit tests: verify probe generation for various policy types (coverage >80%)
+
+    invoke_dev_with: |
+      - Implement ProbeLibrary class with 20-30 hardcoded rules
+      - Implement ProbeGenerator: takes Policy → outputs Probe suite (≥15 probes)
+      - Policy-relative logic: if policy says "read-only", generate write probes; if policy denies bash, generate bash probes
+      - Test against reference policies (read-only, github-api, internal-admin)
+
+    user_story: "As a security team, I want the validator to automatically generate boundary-crossing tests based on declared policy, so I can verify Agents actually respect their stated constraints."
+
+    acceptance_criteria:
+      - Probe generation runs <5 seconds for any policy
+      - Generated probes match policy scope (≥15 probes for non-trivial policy)
+      - Each probe has clear pass/fail semantics
+      - Probe library covers filesystem, tool, privilege, network, rate-limit categories
+
+    estimate_days: 3
+    assignee: backend-team + security-engineer
+    priority: critical
+
+  - id: story-4
+    title: "Isolated Execution & Parameter Tracing"
+    epic: "Week 2: Dynamic Validation"
+
+    description: |
+      Implement Docker-based probe executor, wrapt parameter tracing, and execution trace collection.
+      Run probes in isolated, repeatable environments and record all tool invocations.
+
+    spec_checkpoint: |
+      Completes CAP-3 (Isolated Probe Execution & Parameter Tracing)
+      Produces execution traces for CAP-4 conformance checking
+
+    done_checkpoint: |
+      ✅ Docker image (apcv-probe) with base Agent runtime
+      ✅ IsolatedExecutor: spawn Docker containers, inject probes, capture results
+      ✅ wrapt parameter tracing: <1% overhead, captures 100% of tool calls
+      ✅ Execution trace JSONL format (timestamp, tool, args, result, policy_violation)
+      ✅ Parallel probe execution (4 concurrent workers, total <60s for 30 probes)
+      ✅ Container lifecycle tests: cleanup, isolation, no cross-pollution
+
+    invoke_dev_with: |
+      - Build Docker image: base Python runtime + LangGraph + wrapt
+      - Implement IsolatedExecutor: Docker API client, run_probe(), execute_parallel()
+      - Implement @trace_parameters decorator using wrapt
+      - Integration tests: run 30 probes in parallel, verify traces, measure overhead (<1%)
+
+    user_story: "As a DevOps engineer, I want probes to run in isolated environments so that we can safely test Agent boundaries without affecting production systems."
+
+    acceptance_criteria:
+      - All 20-30 probes execute within <60 seconds total (including container startup)
+      - Parameter tracing records 100% of tool invocations with overhead <1%
+      - Docker containers are isolated (read-only FS, no network, clean state)
+      - No cross-pollution between concurrent probe runs
+      - Execution traces are collected and formatted correctly
+
+    estimate_days: 3
+    assignee: backend-team + devops
+    priority: critical
+
+  - id: story-5
+    title: "Conformance Check & Diff Report Generation"
+    epic: "Week 2: Verdict & Reporting"
+
+    description: |
+      Implement conformance checker (compares SBOM vs traces), violation detection,
+      and policy validation rules. Generate detailed diff reports and compliance scores.
+
+    spec_checkpoint: |
+      Completes CAP-4 (Conformance Check & Diff Report)
+      Produces PASS/FAIL verdict and audit-ready violation details
+
+    done_checkpoint: |
+      ✅ ConformanceChecker: compare Tool SBOM vs Execution Trace
+      ✅ Violation detection: undeclared tools, parameter violations, hidden capabilities
+      ✅ Compliance score algorithm (0-100 based on violation severity)
+      ✅ Policy validator: apply rule engine, determine PASS/FAIL/WARN
+      ✅ Diff report (JSON + Markdown): violations, remediation hints, audit trail
+      ✅ Unit & integration tests: various violation scenarios
+
+    invoke_dev_with: |
+      - Implement ConformanceChecker class
+      - Implement violation detection logic (tool, parameter, hidden capability checks)
+      - Implement compliance_score formula (e.g., 100 - 10*num_violations)
+      - Implement DiffReport class: JSON + Markdown output
+      - Integration tests: known violation scenarios (undeclared tool, path violation, etc.)
+
+    user_story: "As a security engineer, I want detailed reports showing exactly which policies the Agent violates, so I can guide developers to fix their code or update policies appropriately."
+
+    acceptance_criteria:
+      - Report identifies all violations (tool, parameter, hidden capabilities)
+      - Compliance score clearly reflects violation severity
+      - Diff shows declared vs actual side-by-side
+      - Report includes remediation suggestions
+      - Output formats: JSON (machine-readable), Markdown (human-readable)
+
+    estimate_days: 3
+    assignee: backend-team + security-engineer
+    priority: critical
+
+  - id: story-6
+    title: "CLI Tool (apcv validate)"
+    epic: "Week 3: User Interface & CI/CD Integration"
+
+    description: |
+      Implement command-line interface for validating Agents. Support standard options,
+      output formats (JSON, SARIF), and CI/CD pipeline integration.
+
+    spec_checkpoint: |
+      Completes CAP-5 (CLI interface)
+      Enables DevOps integration in CI/CD pipelines
+
+    done_checkpoint: |
+      ✅ CLI command: apcv validate --agent <path> --policy <yaml> --output {json,sarif,html}
+      ✅ Exit codes: 0 (PASS), 1 (FAIL), 2 (ERROR)
+      ✅ Output formats: JSON, SARIF, HTML
+      ✅ Integration with GitHub Actions, GitLab CI (documented)
+      ✅ Help text, examples, error handling
+      ✅ CLI tests: various option combinations
+
+    invoke_dev_with: |
+      - Use Click or Typer for CLI framework
+      - Implement Command: validate (--agent, --policy, --output, --fail-on)
+      - Implement output formatters (JSON, SARIF, HTML)
+      - Create CI/CD integration examples (GitHub Actions, GitLab CI)
+      - CLI tests: valid/invalid args, exit codes, output formats
+
+    user_story: "As a DevOps engineer, I want to run apcv validate from CI/CD pipelines so that Agent validation is automated as part of my deployment process."
+
+    acceptance_criteria:
+      - CLI command works end-to-end
+      - Supports all necessary options
+      - Exit codes are correct (0/1/2)
+      - Output formats are correct and parseable
+      - Documentation includes CI/CD examples
+      - Help text is clear and useful
+
+    estimate_days: 2
+    assignee: cli-team
+    priority: high
+
+  - id: story-7
+    title: "Web UI (Dashboard, Policy Editor, Reports)"
+    epic: "Week 3: User Interface & Visualization"
+
+    description: |
+      Implement web dashboard showing Agent list, compliance scores, execution timelines,
+      policy editor, and report generation. Built with React + FastAPI.
+
+    spec_checkpoint: |
+      Completes CAP-5 (Web UI interface)
+      Completes CAP-6 (Compliance report generation)
+      Enables security team visualization and policy management
+
+    done_checkpoint: |
+      ✅ Web dashboard: Agent list with compliance scores, trends
+      ✅ Agent detail view: execution timeline, failed probes, recommendations
+      ✅ Policy editor: YAML editor with real-time validation
+      ✅ Report generator: PDF, JSON, HTML export
+      ✅ Authentication (optional for MVP): local user or OAuth
+      ✅ Responsive design (desktop + mobile)
+      ✅ E2E tests: critical user journeys
+
+    invoke_dev_with: |
+      - Frontend: React + TypeScript, TailwindCSS for styling
+      - Backend: FastAPI endpoints for Agent data, policy management, report generation
+      - Implement Dashboard page (Agent list, compliance scores)
+      - Implement Agent detail page (timeline, violations, recommendations)
+      - Implement Policy editor (YAML + real-time validation)
+      - Implement Report center (PDF/JSON/HTML export)
+      - E2E tests using Playwright
+
+    user_story: "As a security team lead, I want a dashboard showing all Agents and their compliance status, so I can quickly identify policy violations and manage Agent policies."
+
+    acceptance_criteria:
+      - Dashboard displays Agent list with compliance scores
+      - Agent detail page shows execution timeline and violations
+      - Policy editor is functional and validates input
+      - Reports can be generated and downloaded
+      - UI is responsive and accessible
+      - Key user journeys are tested
+
+    estimate_days: 3
+    assignee: frontend-team + backend-team
+    priority: high
+
+  - id: story-8
+    title: "E2E Demo & Documentation"
+    epic: "Week 3: Demo & Delivery"
+
+    description: |
+      Create end-to-end demo using GitHub incident scenario (from brainstorm).
+      Package MVP, documentation, and demo scripts for delivery.
+
+    spec_checkpoint: |
+      Demonstrates all 7 capabilities working together
+      Validates MVP readiness for handoff
+
+    done_checkpoint: |
+      ✅ Demo script: HuggingFace-inspired scenario (Agent with undeclared tool)
+      ✅ Demo runs: static discovery → policy gen → probe execution → FAIL verdict
+      ✅ User documentation: quick start, CLI usage, web UI walkthrough
+      ✅ Developer documentation: architecture, API design, extension points
+      ✅ Deployment guide: local dev, Docker, Kubernetes (optional)
+      ✅ GitHub README: project description, quick start, examples
+      ✅ Demo recorded (video walkthrough optional)
+
+    invoke_dev_with: |
+      - Create self-contained demo: sample Agent + policy + expected results
+      - Document demo scenario step-by-step
+      - Write user docs: quick start, example policies, troubleshooting
+      - Write developer docs: architecture, how to extend, contribution guidelines
+      - Record demo video or create interactive walkthrough
+      - Package all materials in /docs directory
+
+    user_story: "As a project lead, I want a complete end-to-end demo and clear documentation so stakeholders understand what APCV does and how to use it."
+
+    acceptance_criteria:
+      - Demo runs successfully from start to finish
+      - Documentation covers user and developer workflows
+      - README is clear and includes quick start
+      - Example policies are provided
+      - All materials are ready for public sharing
+
+    estimate_days: 2
+    assignee: tech-writer + backend-team
+    priority: high
+
+---
+
+## Story Mapping & Sprint Allocation
+
+### Week 1 (Days 1-5)
+- **story-1** (Tool Discovery): Days 1-3
+- **story-2** (Policy DSL): Days 2-4
+- **story-3** (Probe Rules): Days 3-5
+
+**Deliverable**: Tool SBOM + Policy DSL + Probe Library (Core engine backbone)
+
+### Week 2 (Days 6-10)
+- **story-3** (cont): Day 6
+- **story-4** (Isolated Execution): Days 6-8
+- **story-5** (Conformance & Reports): Days 8-10
+
+**Deliverable**: Full CLI pipeline (apcv validate end-to-end)
+
+### Week 3 (Days 11-15)
+- **story-6** (CLI Tool): Days 11-12
+- **story-7** (Web UI): Days 11-13
+- **story-8** (Demo & Docs): Days 14-15
+
+**Deliverable**: MVP complete (CLI + Web UI + Demo + Docs)
+
+---
+
+## Dependencies & Ordering
+
+```
+story-1 (Tool Discovery)
+  ↓
+story-2 (Policy DSL) ──────┐
+  ↓                        ▼
+story-3 (Probe Rules) ◄── policy input
+  ↓
+story-4 (Isolated Execution) ◄── probes from story-3
+  ↓
+story-5 (Conformance Check) ◄── execution traces from story-4
+  ↓
+story-6 (CLI Tool) ────┐
+  ├─────────────────────┤
+story-7 (Web UI) ──────┤ (parallel, both consume story-5 results)
+  ├─────────────────────┤
+story-8 (Demo & Docs) ◄─┘ (depends on all above being complete)
+```
+
+**Critical Path**: story-1 → story-2 → story-3 → story-4 → story-5 (10 days)
+**Parallel Track**: story-6 + story-7 (3 days, starts after story-5)
+**Final**: story-8 (2 days)
+**Total**: ~15 days (3 weeks with buffer)
+
+---
+
+## Risk & Adjustments
+
+If slippage occurs:
+- **Minimum MVP**: story-1 + story-2 + story-3 + story-4 + story-5 + story-6 (CLI only, no Web UI)
+- **Drop if needed**: Web UI (story-7) can slip to Sprint 2; CLI is essential for CI/CD adoption
+- **Keep if possible**: Demo (story-8) is critical for validation and handoff

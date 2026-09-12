@@ -1,0 +1,10 @@
+project_name: Agent Policy Conformance Validator (APCV)
+user_name: 开发者
+communication_language: Chinese
+document_output_language: Chinese
+user_skill_level: intermediate
+
+planning_artifacts: d:/Projects/OCASC/_bmad-output
+implementation_artifacts: d:/Projects/OCASC/_implementation
+
+date: "2026-09-12"
