@@ -1,4 +1,4 @@
-"""Tests for probe generator"""
+"""Tests for probe generator (agent probes only)."""
 import pytest
 from apcv.core.probes.library import ProbeLibrary
 from apcv.core.probes.generator import ProbeGenerator
@@ -15,28 +15,8 @@ def generator(library):
     return ProbeGenerator(library)
 
 
-def test_generator_read_only_policy(generator):
-    """Test generator creates write probes for read-only policy"""
-    policy = Policy(
-        metadata=Metadata(name="Read-Only"),
-        boundaries={
-            "filesystem": {
-                "read_only": True,
-                "allowed_paths": ["/tmp"],
-                "denied_paths": []
-            }
-        }
-    )
-
-    probes = generator.generate(policy)
-
-    # Should include filesystem probes
-    fs_probes = [p for p in probes if p.category == "filesystem"]
-    assert len(fs_probes) > 0
-
-
 def test_generator_limited_tools_policy(generator):
-    """Test generator creates tool probes for limited tools policy"""
+    """A tool allow-list yields tool (agent) probes."""
     policy = Policy(
         metadata=Metadata(name="Limited Tools"),
         boundaries={
@@ -49,38 +29,52 @@ def test_generator_limited_tools_policy(generator):
 
     probes = generator.generate(policy)
 
-    # Should include tool probes
     tool_probes = [p for p in probes if p.category == "tool"]
     assert len(tool_probes) > 0
+    # All generated probes are agent-category (no shell probes).
+    assert all(p.execution == "agent" for p in probes)
+
+
+def test_generator_rate_limit_policy(generator):
+    """A rate-limit boundary yields rate_limit probes."""
+    policy = Policy(
+        metadata=Metadata(name="Rated"),
+        boundaries={"rate_limit": {"calls_per_minute": 10}}
+    )
+
+    probes = generator.generate(policy)
+    assert any(p.category == "rate_limit" for p in probes)
+    assert all(p.execution == "agent" for p in probes)
 
 
 def test_generator_no_duplicates(generator):
-    """Test generator doesn't create duplicate probes"""
     policy = Policy(
         metadata=Metadata(name="Complex"),
         boundaries={
-            "filesystem": {"read_only": True, "allowed_paths": [], "denied_paths": []},
             "tool": {"allowed_tools": ["search"], "denied_tools": []},
-            "network": {"network_enabled": False, "allowed_domains": [], "denied_domains": []},
+            "rate_limit": {"calls_per_minute": 10},
         }
     )
 
     probes = generator.generate(policy)
-
-    # Check no duplicates
     ids = [p.id for p in probes]
     assert len(ids) == len(set(ids))
 
 
-def test_generator_privilege_always_included(generator):
-    """Test generator always includes privilege probes"""
+def test_generator_empty_policy_yields_no_probes(generator):
+    """No tool/rate boundary => no agent probes (no shell probes anymore)."""
+    policy = Policy(metadata=Metadata(name="Empty"), boundaries={})
+    assert generator.generate(policy) == []
+
+
+def test_generator_never_generates_shell_probes(generator):
+    """Filesystem/network/privilege boundaries must NOT yield shell probes."""
     policy = Policy(
-        metadata=Metadata(name="Minimal"),
-        boundaries={}
+        metadata=Metadata(name="ReadOnly"),
+        boundaries={
+            "filesystem": {"read_only": True, "allowed_paths": ["/tmp"], "denied_paths": []},
+            "network": {"network_enabled": False, "allowed_domains": [], "denied_domains": []},
+        }
     )
-
     probes = generator.generate(policy)
-
-    # Should still include privilege probes
-    priv_probes = [p for p in probes if p.category == "privilege"]
-    assert len(priv_probes) > 0
+    assert all(p.execution == "agent" for p in probes)

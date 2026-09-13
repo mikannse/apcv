@@ -16,7 +16,7 @@ class Probe(BaseModel):
     execution: str = Field(
         ...,
         description="How the probe is executed",
-        pattern="^(shell|agent|baseline)$"
+        pattern="^(agent|baseline)$"
     )
     severity: str = Field(
         default="high",

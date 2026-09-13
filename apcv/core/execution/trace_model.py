@@ -13,7 +13,7 @@ class ExecutionTrace(BaseModel):
     correctly blocked the attempt.
     """
     probe_id: str = Field(..., description="Probe ID that produced this trace")
-    execution: str = Field(..., description="Execution mode: 'shell' or 'agent'")
+    execution: str = Field(..., description="Execution mode: 'agent' or 'baseline'")
     exit_code: int = Field(..., description="Process exit code (0 = success)")
     output: str = Field(default="", description="Captured stdout/stderr")
     violation: bool = Field(default=False, description="True if boundary was breached")

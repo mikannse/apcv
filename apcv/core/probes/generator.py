@@ -1,4 +1,11 @@
-"""Policy-relative probe generator"""
+"""Policy-relative probe generator.
+
+Generates agent-category probes only. The sandbox is a fixed isolation cage
+(not a policy enforcer), so the old "shell" probes (filesystem/network/
+privilege) that asserted whether the cage blocks are gone — they measured the
+wrong thing. The security signal comes from agent probes observing whether the
+agent's tool surface can reach a boundary it should not.
+"""
 from typing import List
 from apcv.core.probes.probe import Probe
 from apcv.core.probes.library import ProbeLibrary
@@ -6,50 +13,30 @@ from apcv.core.policy.schema import Policy
 
 
 class ProbeGenerator:
-    """Generate policy-relative probes based on declared policy"""
+    """Generate policy-relative agent probes based on declared policy."""
 
     def __init__(self, library: ProbeLibrary):
         self.library = library
 
     def generate(self, policy: Policy) -> List[Probe]:
         """
-        Generate probes based on policy
+        Generate agent probes based on policy.
 
-        For each constrained boundary in the policy, generate corresponding probes
-        to test violations.
-
-        Args:
-            policy: Policy to generate probes for
-
-        Returns:
-            List of relevant probes
+        Only agent-category probes (tool, rate_limit) are produced. These are
+        the probes that actually exercise the agent's tool surface.
         """
-        probes = []
+        probes: List[Probe] = []
 
-        # Filesystem probes: if read-only, add write probes
-        if "filesystem" in policy.boundaries:
-            fs_boundary = policy.boundaries["filesystem"]
-            if isinstance(fs_boundary, dict) and fs_boundary.get("read_only", False):
-                probes.extend(self.library.get_probes_by_category("filesystem"))
-
-        # Tool probes: if limited tools, add probes for restricted tools
+        # Tool probes: if there is a tool boundary with an allow-list, test for
+        # undeclared/denied tool access.
         if "tool" in policy.boundaries:
             tool_boundary = policy.boundaries["tool"]
             if isinstance(tool_boundary, dict):
-                allowed_tools = tool_boundary.get("allowed_tools", [])
-                if allowed_tools:  # If there are allowed tools, test for denied tools
+                allowed_tools = tool_boundary.get("allowed_tools", []) or []
+                if allowed_tools:
                     probes.extend(self.library.get_probes_by_category("tool"))
 
-        # Network probes: if network disabled, add network probes
-        if "network" in policy.boundaries:
-            net_boundary = policy.boundaries["network"]
-            if isinstance(net_boundary, dict) and not net_boundary.get("network_enabled", False):
-                probes.extend(self.library.get_probes_by_category("network"))
-
-        # Privilege probes: always include
-        probes.extend(self.library.get_probes_by_category("privilege"))
-
-        # Rate limit probes: if rate limits set, include them
+        # Rate limit probes: if rate limits are set, include them.
         if "rate_limit" in policy.boundaries:
             rate_boundary = policy.boundaries["rate_limit"]
             if isinstance(rate_boundary, dict) and any(rate_boundary.values()):

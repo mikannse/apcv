@@ -1,11 +1,11 @@
-"""Integration tests for isolated probe execution (requires Docker).
+"""Integration tests for isolated agent-probe execution (requires Docker).
 
 Skipped when the Docker daemon is unavailable. Marked with `docker` so they can
 be excluded with `pytest -m "not docker"`.
 """
 import pytest
 
-from apcv.core.execution.executor import IsolatedExecutor, DockerUnavailableError
+from apcv.core.execution.executor import IsolatedExecutor
 from apcv.core.policy.schema import Policy, Metadata
 from apcv.core.probes.probe import Probe
 
@@ -17,14 +17,14 @@ def _policy(**boundaries):
     return Policy(metadata=Metadata(name="test"), boundaries=boundaries)
 
 
-def _probe(**kwargs):
+def _agent_probe(**kwargs):
     base = dict(
         id="probe_x",
-        category="filesystem",
+        category="tool",
         description="d",
-        test_command="true",
-        expected_outcome="denied",
-        execution="shell",
+        test_command="agent.call_tool('search_documents', {'query': 'test'})",
+        expected_outcome="recorded",
+        execution="agent",
     )
     base.update(kwargs)
     return Probe(**base)
@@ -39,52 +39,10 @@ def executor():
     return ex
 
 
-def test_execute_benign_command_succeeds(executor):
-    """A `true` command exits 0; since this probe is framed as a boundary
-    attempt, success is recorded as a violation (sandbox did not block it).
-
-    Uses the privilege category (not filesystem) because filesystem probes
-    have a special rule: empty output after a denied-file mount is NOT a
-    violation (isolation held, no content leaked).
-    """
-    trace = executor.execute_probe(
-        _probe(test_command="true", category="privilege"),
-        _policy(),
-    )
-    assert trace.exit_code == 0
-    assert trace.violation is True
-
-
-def test_execute_failing_command_is_not_violation(executor):
-    """A failing command (exit != 0) is recorded as blocked, not a violation."""
-    trace = executor.execute_probe(
-        _probe(test_command="cat /nonexistent-file-xyz"),
-        _policy(),
-    )
-    assert trace.exit_code != 0
-    assert trace.violation is False
-
-
-def test_parallel_execution_returns_all_traces(executor):
-    probes = [
-        _probe(id="p1", test_command="true"),
-        _probe(id="p2", test_command="false"),
-    ]
-    traces = executor.execute_parallel(probes, _policy())
-    assert len(traces) == 2
-    assert {t.probe_id for t in traces} == {"p1", "p2"}
-
-
 def test_agent_probe_captures_tool_records(executor):
     """A tool-calling agent probe produces audit records on the trace."""
     agent = "tests/fixtures/sample_agents/simple_agent.py"
-    probe = _probe(
-        id="agent_probe_x",
-        category="tool",
-        test_command="agent.call_tool('search_documents', {'query': 'test'})",
-        execution="agent",
-    )
-    traces = executor.execute_agent_probes([probe], agent, _policy())
+    traces = executor.execute_agent_probes([_agent_probe()], agent, _policy())
 
     assert len(traces) == 1
     trace = traces[0]
@@ -93,3 +51,27 @@ def test_agent_probe_captures_tool_records(executor):
     assert len(trace.records) == 1
     assert trace.records[0].tool == "search_documents"
     assert trace.records[0].args == {"query": "test"}
+
+
+def test_agent_probe_undeclared_tool_is_not_violation(executor):
+    """An undeclared tool is correctly rejected (not a violation)."""
+    agent = "tests/fixtures/sample_agents/simple_agent.py"
+    probe = _agent_probe(
+        id="undeclared",
+        test_command="agent.call_tool('not_a_real_tool', {})",
+    )
+    traces = executor.execute_agent_probes([probe], agent, _policy())
+
+    assert len(traces) == 1
+    assert traces[0].violation is False
+
+
+def test_parallel_agent_probes_return_all(executor):
+    agent = "tests/fixtures/sample_agents/simple_agent.py"
+    probes = [
+        _agent_probe(id="p1"),
+        _agent_probe(id="p2", test_command="agent.call_tool('nope', {})"),
+    ]
+    traces = executor.execute_agent_probes(probes, agent, _policy())
+    assert len(traces) == 2
+    assert {t.probe_id for t in traces} == {"p1", "p2"}
