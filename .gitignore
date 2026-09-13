@@ -60,3 +60,6 @@ Thumbs.db
 .apcv/
 *.log
 .venv/
+
+# Submission report artifacts (kept locally, not versioned)
+docs/
