@@ -177,3 +177,38 @@ def test_scan_package_tolerates_bad_file(scanner, adapter, tmp_path):
     sbom = scanner.scan_package(str(tmp_path), adapter)
 
     assert {t.name for t in sbom.tools} == {"good_tool"}
+
+
+# ---------------------------------------------------------------------------
+# MCP endpoint discovery via scan() (story 4.2 AC 5)
+# ---------------------------------------------------------------------------
+
+MCP_AGENT = '''from langchain_mcp_adapters.client import MultiServerMCPClient
+client = MultiServerMCPClient({
+    "weather": {"transport": "http", "url": "http://localhost:8000/mcp"},
+})
+'''
+
+
+def test_scan_captures_mcp_servers(scanner, adapter):
+    """scan() populates SBOM.mcp_servers from MCP declarations."""
+    with NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        f.write(MCP_AGENT)
+        f.flush()
+        path = f.name
+
+    try:
+        sbom = scanner.scan(path, adapter)
+        assert len(sbom.mcp_servers) == 1
+        assert sbom.mcp_servers[0].name == "weather"
+        assert sbom.mcp_servers[0].transport == "http"
+        assert sbom.mcp_servers[0].url == "http://localhost:8000/mcp"
+    finally:
+        Path(path).unlink()
+
+
+def test_scan_mcp_servers_empty_by_default(scanner, adapter, tmp_path):
+    """Agents with no MCP declarations get an empty mcp_servers list."""
+    _write_pkg(tmp_path, {"agent.py": TOOL_MODULE.format(name="plain", doc="p")})
+    sbom = scanner.scan(str(tmp_path / "agent.py"), adapter)
+    assert sbom.mcp_servers == []

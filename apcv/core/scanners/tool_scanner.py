@@ -38,6 +38,9 @@ class ToolScanner(Scanner):
         # Extract tools from AST
         tools = adapter.extract_tools(ast_tree)
 
+        # Extract MCP endpoint declarations (route A: static, no tool enum)
+        mcp_servers = adapter.extract_mcp_servers(ast_tree)
+
         # Create SBOM
         sbom = SBOM(
             agent_path=str(agent_file.absolute()),
@@ -46,6 +49,7 @@ class ToolScanner(Scanner):
                 python_version=f"{sys.version_info.major}.{sys.version_info.minor}",
             ),
             tools=tools,
+            mcp_servers=mcp_servers,
         )
 
         return sbom
@@ -100,6 +104,9 @@ class ToolScanner(Scanner):
                 # Attribute the source file (package-relative path).
                 tool.module = rel.as_posix()
                 sbom.tools.append(tool)
+
+            # Merge MCP endpoint declarations from this module.
+            sbom.mcp_servers.extend(partial.mcp_servers)
 
         return sbom
 

@@ -100,3 +100,60 @@ def test_adapter_extract_docstring(adapter, simple_agent_code):
         assert tools[1].description == "Get GitHub issue"
     finally:
         path.unlink()
+
+
+# ---------------------------------------------------------------------------
+# MCP endpoint discovery tests (story 4.2)
+# ---------------------------------------------------------------------------
+
+def test_extract_mcp_multiserver(adapter):
+    code = '''
+from langchain_mcp_adapters.client import MultiServerMCPClient
+client = MultiServerMCPClient({
+    "math": {"transport": "stdio", "command": "python", "args": ["math_server.py"]},
+    "weather": {"transport": "http", "url": "http://localhost:8000/mcp"},
+})
+'''
+    servers = adapter.extract_mcp_servers(ast.parse(code))
+
+    assert len(servers) == 2
+    # math (stdio)
+    assert servers[0].name == "math"
+    assert servers[0].transport == "stdio"
+    assert servers[0].command == "python"
+    assert servers[0].args == ["math_server.py"]
+    # weather (http)
+    assert servers[1].name == "weather"
+    assert servers[1].transport == "http"
+    assert servers[1].url == "http://localhost:8000/mcp"
+
+
+def test_extract_mcp_adapter_url(adapter):
+    code = '''
+from langchain.mcp import MCPAdapter
+adapter = MCPAdapter("https://some-server.com/mcp")
+'''
+    servers = adapter.extract_mcp_servers(ast.parse(code))
+
+    assert len(servers) == 1
+    assert servers[0].transport == "http"
+    assert servers[0].url == "https://some-server.com/mcp"
+    assert servers[0].unresolved is False
+
+
+def test_extract_mcp_unresolved_variable(adapter):
+    code = '''
+client = MultiServerMCPClient(servers_config)
+'''
+    servers = adapter.extract_mcp_servers(ast.parse(code))
+
+    assert len(servers) == 1
+    assert servers[0].unresolved is True
+    assert servers[0].name == "<unresolved>"
+    assert servers[0].transport == "unknown"
+
+
+def test_extract_mcp_none_when_no_mcp(adapter, simple_agent_code):
+    """No MCP declarations -> empty list."""
+    servers = adapter.extract_mcp_servers(ast.parse(simple_agent_code))
+    assert servers == []

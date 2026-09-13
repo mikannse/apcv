@@ -3,7 +3,7 @@ import ast
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from apcv.core.frameworks.adapter import FrameworkAdapter
-from apcv.core.utils.sbom import Tool, ToolParameter
+from apcv.core.utils.sbom import Tool, ToolParameter, MCPServer
 
 
 class LangGraphAdapter(FrameworkAdapter):
@@ -39,6 +39,95 @@ class LangGraphAdapter(FrameworkAdapter):
                         break
 
         return tools
+
+    def extract_mcp_servers(self, ast_tree: ast.AST) -> List[MCPServer]:
+        """Extract MCP connection declarations from AST (static, route A).
+
+        Recognizes two APIs:
+          * `MultiServerMCPClient({...})` — a dict literal of server name ->
+            config dict (transport / url / command / args).
+          * `MCPAdapter(<target>)` — a single target (URL string, or an object).
+
+        A config that references a variable (e.g. `MultiServerMCPClient(cfg)`)
+        is recorded as an unresolved entry, not silently dropped. Tool
+        enumeration (what each server exposes) is NOT done here — that needs
+        runtime list_tools (route B).
+        """
+        servers: List[MCPServer] = []
+
+        if ast_tree is None:
+            return servers
+
+        for node in ast.walk(ast_tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if not isinstance(func, ast.Name):
+                continue
+
+            if func.id == "MultiServerMCPClient":
+                servers.extend(self._extract_multiserver(node))
+            elif func.id == "MCPAdapter":
+                servers.extend(self._extract_mcp_adapter(node))
+
+        return servers
+
+    def _extract_multiserver(self, call: ast.Call) -> List[MCPServer]:
+        """Extract servers from a MultiServerMCPClient({...}) call."""
+        if not call.args:
+            return []
+
+        arg = call.args[0]
+        # Variable reference (e.g. MultiServerMCPClient(servers_config)).
+        if isinstance(arg, ast.Name):
+            return [MCPServer(name="<unresolved>", unresolved=True)]
+
+        if not isinstance(arg, ast.Dict):
+            return []
+
+        servers = []
+        for key, value in zip(arg.keys, arg.values):
+            name = key.value if isinstance(key, ast.Constant) else "<unknown>"
+            servers.append(MCPServer(name=name, **self._parse_server_config(value)))
+        return servers
+
+    def _parse_server_config(self, value: ast.expr) -> Dict[str, Any]:
+        """Parse a single server's config dict into MCPServer fields."""
+        transport = "unknown"
+        url = ""
+        command = ""
+        args: List[str] = []
+
+        if isinstance(value, ast.Dict):
+            for k, v in zip(value.keys, value.values):
+                if not (isinstance(k, ast.Constant) and isinstance(k.value, str)):
+                    continue
+                field = k.value
+                if field == "transport":
+                    transport = v.value if isinstance(v, ast.Constant) else "unknown"
+                elif field == "url":
+                    url = v.value if isinstance(v, ast.Constant) else ""
+                elif field == "command":
+                    command = v.value if isinstance(v, ast.Constant) else ""
+                elif field == "args":
+                    if isinstance(v, ast.List):
+                        args = [e.value for e in v.elts if isinstance(e, ast.Constant)]
+
+        return {"transport": transport, "url": url, "command": command, "args": args}
+
+    def _extract_mcp_adapter(self, call: ast.Call) -> List[MCPServer]:
+        """Extract a single server from an MCPAdapter(<target>) call."""
+        if not call.args:
+            return []
+
+        arg = call.args[0]
+        # URL string target -> http transport (inferred).
+        if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            return [MCPServer(name=arg.value, transport="http", url=arg.value)]
+
+        # Any other target (fastmcp.Client, MCPConfig, variable) is not
+        # statically resolvable to a concrete endpoint.
+        return [MCPServer(name="<unresolved>", unresolved=True)]
 
     def _get_decorator_name(self, decorator: ast.expr) -> Optional[str]:
         """Extract decorator name from AST node"""

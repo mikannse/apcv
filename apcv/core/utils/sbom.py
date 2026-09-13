@@ -22,6 +22,26 @@ class Tool(BaseModel):
     description: str = Field(default="", description="Tool description")
 
 
+class MCPServer(BaseModel):
+    """MCP server connection declaration discovered via static analysis.
+
+    Represents an MCP endpoint an agent declares to connect to, NOT the tools
+    that server exposes (tool enumeration needs runtime list_tools — route B).
+    """
+    name: str = Field(..., description="Server name (dict key, or URL, or '<unresolved>')")
+    transport: str = Field(
+        default="unknown",
+        description="Transport: stdio | http | unknown",
+    )
+    url: str = Field(default="", description="HTTP endpoint URL (http transport)")
+    command: str = Field(default="", description="Launch command (stdio transport)")
+    args: List[str] = Field(default_factory=list, description="Command args (stdio transport)")
+    unresolved: bool = Field(
+        default=False,
+        description="True if the config referenced a variable and could not be statically resolved",
+    )
+
+
 class Metadata(BaseModel):
     """SBOM metadata"""
     framework: str = Field(..., description="Framework name (e.g., 'langgraph')")
@@ -38,6 +58,7 @@ class SBOM(BaseModel):
     agent_path: str = Field(..., description="Path to Agent code")
     metadata: Metadata
     tools: List[Tool] = Field(default_factory=list)
+    mcp_servers: List[MCPServer] = Field(default_factory=list, description="MCP endpoints declared by the agent")
 
 
 def create_empty_sbom(agent_path: str, framework: str = "langgraph") -> SBOM:

@@ -126,11 +126,11 @@ development_status:
     title: "MCP Tool Surface Discovery"
     epic: "Sprint 2: Package-Level Discovery"
     description: "Discover tools declared via MCP (Model Context Protocol) adapters/configuration"
-    status: "backlog"
+    status: "ready-for-dev"
     last_updated: "2026-09-13"
-    spec_checkpoint: "CAP-1 第②层:MCP 工具面发现"
+    spec_checkpoint: "CAP-1 第②层:MCP 工具面发现(静态前置:端点清单)"
     story_file: "_implementation/4-2-mcp-discovery.md"
-    completion_note: "待拆解。调研结论:LangChain v1.4.0 起 MCP 支持内建在 langchain.mcp 命名空间(替代 langchain-mcp-adapters),MCPAdapter.list_tools() 返回带 mcp 命名空间 metadata 的 LangChain 工具。解析 agent 的 MCP 配置/连接,枚举其工具面并入 SBOM。"
+    completion_note: "故事文件已生成(ready-for-dev)。走路线 A 纯静态:解析 MCP 连接声明(MultiServerMCPClient/MCPAdapter)产出端点清单进 SBOM.mcp_servers,不枚举工具(运行时 list_tools 属路线 B)。"
 
   4-4-subagent-inheritance:
     title: "Sub-Agent Tool Inheritance Discovery"
