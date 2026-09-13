@@ -63,22 +63,40 @@ def validate(
             try:
                 executor = IsolatedExecutor()
                 executor.build_image_if_missing()
-                execution_traces = executor.execute_shell_probes(probes, policy_obj)
-                execution_traces += executor.execute_agent_probes(probes, agent, policy_obj)
-                for trace in execution_traces:
+                shell_traces = executor.execute_shell_probes(probes, policy_obj)
+                agent_traces = executor.execute_agent_probes(probes, agent, policy_obj)
+                execution_traces = shell_traces + agent_traces
+
+                # Shell probes self-check the sandbox cage, not the agent.
+                # A shell-probe "breach" means APCV's own sandbox translation
+                # failed to enforce a policy constraint — an APCV limitation,
+                # NOT a finding about the agent. It must not lower the agent's
+                # compliance score.
+                sandbox_gaps = [t for t in shell_traces if t.violation]
+                for trace in agent_traces:
                     if trace.violation:
                         result.violations.append(
                             Violation(
                                 "boundary_breach",
-                                f"Probe '{trace.probe_id}' breached sandbox: {trace.output.strip()[:120]}",
+                                f"Probe '{trace.probe_id}': agent tool surface breached — {trace.output.strip()[:120]}",
                                 severity=trace.severity,
                             )
                         )
+
+                agent_violations = sum(1 for t in agent_traces if t.violation)
                 typer.echo(
-                    f"✅ Executed {len(execution_traces)} probes, "
-                    f"{sum(1 for t in execution_traces if t.violation)} violations",
+                    f"✅ Executed {len(execution_traces)} probes "
+                    f"({len(shell_traces)} sandbox self-check, {len(agent_traces)} agent), "
+                    f"{agent_violations} agent violations",
                     err=True,
                 )
+                if sandbox_gaps:
+                    typer.echo(
+                        f"⚠️  Sandbox self-check: {len(sandbox_gaps)} gaps — "
+                        f"APCV sandbox translation does not yet enforce all policy "
+                        f"constraints (not agent findings)",
+                        err=True,
+                    )
             except DockerUnavailableError as e:
                 typer.echo(f"⚠️  {e} — falling back to static-only analysis", err=True)
 
