@@ -212,3 +212,35 @@ def test_scan_mcp_servers_empty_by_default(scanner, adapter, tmp_path):
     _write_pkg(tmp_path, {"agent.py": TOOL_MODULE.format(name="plain", doc="p")})
     sbom = scanner.scan(str(tmp_path / "agent.py"), adapter)
     assert sbom.mcp_servers == []
+
+
+# ---------------------------------------------------------------------------
+# Sub-agent discovery via scan() (story 4.4 AC 5)
+# ---------------------------------------------------------------------------
+
+SUBAGENT_AGENT = '''from langchain.agents import create_agent
+from langchain.tools import tool
+
+@tool
+def fruit_info(fruit_name: str) -> str:
+    """f"""
+    return fruit_name
+
+fruit_agent = create_agent(model="x", tools=[fruit_info], prompt="fruit")
+'''
+
+
+def test_scan_captures_subagents(scanner, adapter):
+    """scan() populates SBOM.sub_agents from create_agent declarations."""
+    with NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        f.write(SUBAGENT_AGENT)
+        f.flush()
+        path = f.name
+
+    try:
+        sbom = scanner.scan(path, adapter)
+        assert len(sbom.sub_agents) == 1
+        assert sbom.sub_agents[0].name == "fruit_agent"
+        assert sbom.sub_agents[0].tools == ["fruit_info"]
+    finally:
+        Path(path).unlink()

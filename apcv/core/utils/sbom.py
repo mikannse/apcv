@@ -42,6 +42,21 @@ class MCPServer(BaseModel):
     )
 
 
+class SubAgent(BaseModel):
+    """A create_agent(...) declaration discovered via static analysis.
+
+    Represents an agent (parent or child) declared in code with its tools list.
+    Inheritance chains (who invokes whom) are NOT traced — that is implicit at
+    runtime and unreliable to reconstruct statically.
+    """
+    name: str = Field(default="<unnamed>", description="Assignment variable name, or '<unnamed>'")
+    tools: List[str] = Field(default_factory=list, description="Tool names declared in this agent's tools=[...]")
+    unresolved: bool = Field(
+        default=False,
+        description="True if the tools list referenced a variable and could not be statically resolved",
+    )
+
+
 class Metadata(BaseModel):
     """SBOM metadata"""
     framework: str = Field(..., description="Framework name (e.g., 'langgraph')")
@@ -59,6 +74,7 @@ class SBOM(BaseModel):
     metadata: Metadata
     tools: List[Tool] = Field(default_factory=list)
     mcp_servers: List[MCPServer] = Field(default_factory=list, description="MCP endpoints declared by the agent")
+    sub_agents: List[SubAgent] = Field(default_factory=list, description="create_agent declarations (parent + child) with their tools")
 
 
 def create_empty_sbom(agent_path: str, framework: str = "langgraph") -> SBOM:

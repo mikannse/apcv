@@ -41,6 +41,9 @@ class ToolScanner(Scanner):
         # Extract MCP endpoint declarations (route A: static, no tool enum)
         mcp_servers = adapter.extract_mcp_servers(ast_tree)
 
+        # Extract sub-agent (create_agent) declarations and their tools
+        sub_agents = adapter.extract_subagents(ast_tree)
+
         # Create SBOM
         sbom = SBOM(
             agent_path=str(agent_file.absolute()),
@@ -50,6 +53,7 @@ class ToolScanner(Scanner):
             ),
             tools=tools,
             mcp_servers=mcp_servers,
+            sub_agents=sub_agents,
         )
 
         return sbom
@@ -107,6 +111,9 @@ class ToolScanner(Scanner):
 
             # Merge MCP endpoint declarations from this module.
             sbom.mcp_servers.extend(partial.mcp_servers)
+
+            # Merge sub-agent declarations from this module.
+            sbom.sub_agents.extend(partial.sub_agents)
 
         return sbom
 

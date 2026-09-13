@@ -157,3 +157,75 @@ def test_extract_mcp_none_when_no_mcp(adapter, simple_agent_code):
     """No MCP declarations -> empty list."""
     servers = adapter.extract_mcp_servers(ast.parse(simple_agent_code))
     assert servers == []
+
+
+# ---------------------------------------------------------------------------
+# Sub-agent tool surface enumeration tests (story 4.4)
+# ---------------------------------------------------------------------------
+
+def test_extract_subagents_single(adapter):
+    code = '''
+from langchain.agents import create_agent
+from langchain.tools import tool
+
+@tool
+def fruit_info(fruit_name: str) -> str:
+    """f"""
+    return fruit_name
+
+fruit_agent = create_agent(
+    model="gpt-5.4-mini",
+    tools=[fruit_info],
+    prompt="You are a fruit expert.",
+)
+'''
+    subagents = adapter.extract_subagents(ast.parse(code))
+
+    assert len(subagents) == 1
+    assert subagents[0].name == "fruit_agent"
+    assert subagents[0].tools == ["fruit_info"]
+    assert subagents[0].unresolved is False
+
+
+def test_extract_subagents_multiple(adapter):
+    code = '''
+from langchain.agents import create_agent
+
+fruit = create_agent(model="x", tools=["fruit_info"], prompt="f")
+veggie = create_agent(model="x", tools=["veggie_info"], prompt="v")
+'''
+    subagents = adapter.extract_subagents(ast.parse(code))
+
+    assert len(subagents) == 2
+    assert {s.name for s in subagents} == {"fruit", "veggie"}
+    assert subagents[0].tools == ["fruit_info"]
+    assert subagents[1].tools == ["veggie_info"]
+
+
+def test_extract_subagents_unresolved_tools(adapter):
+    code = '''
+from langchain.agents import create_agent
+agent = create_agent(model="x", tools=some_tools_list, prompt="p")
+'''
+    subagents = adapter.extract_subagents(ast.parse(code))
+
+    assert len(subagents) == 1
+    assert subagents[0].unresolved is True
+    assert subagents[0].tools == []
+
+
+def test_extract_subagents_unnamed(adapter):
+    """create_agent not assigned to a variable -> '<unnamed>'."""
+    code = '''
+from langchain.agents import create_agent
+create_agent(model="x", tools=["t"], prompt="p")
+'''
+    subagents = adapter.extract_subagents(ast.parse(code))
+
+    assert len(subagents) == 1
+    assert subagents[0].name == "<unnamed>"
+
+
+def test_extract_subagents_none(adapter, simple_agent_code):
+    """No create_agent -> empty list."""
+    assert adapter.extract_subagents(ast.parse(simple_agent_code)) == []

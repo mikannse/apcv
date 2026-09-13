@@ -3,7 +3,7 @@ import ast
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from apcv.core.frameworks.adapter import FrameworkAdapter
-from apcv.core.utils.sbom import Tool, ToolParameter, MCPServer
+from apcv.core.utils.sbom import Tool, ToolParameter, MCPServer, SubAgent
 
 
 class LangGraphAdapter(FrameworkAdapter):
@@ -128,6 +128,72 @@ class LangGraphAdapter(FrameworkAdapter):
         # Any other target (fastmcp.Client, MCPConfig, variable) is not
         # statically resolvable to a concrete endpoint.
         return [MCPServer(name="<unresolved>", unresolved=True)]
+
+    def extract_subagents(self, ast_tree: ast.AST) -> List[SubAgent]:
+        """Extract create_agent(...) declarations and their tools lists (static).
+
+        Enumerates every `create_agent(tools=[...])` call — parent and child
+        agents alike (they are the same function). Each becomes a SubAgent with
+        the tools declared in its `tools=[...]` list. Inheritance chains (who
+        invokes whom) are NOT traced — that is implicit at runtime and unreliable
+        to reconstruct statically.
+        """
+        subagents: List[SubAgent] = []
+
+        if ast_tree is None:
+            return subagents
+
+        for node in ast.walk(ast_tree):
+            # Assigned form:  fruit_agent = create_agent(tools=[...])
+            if isinstance(node, ast.Assign) and self._is_create_agent(node.value):
+                name = self._target_name(node.targets[0])
+                subagents.append(self._build_subagent(name, node.value))
+            # Bare call form:  create_agent(tools=[...])
+            elif isinstance(node, ast.Expr) and self._is_create_agent(node.value):
+                subagents.append(self._build_subagent("<unnamed>", node.value))
+
+        return subagents
+
+    @staticmethod
+    def _is_create_agent(node: ast.expr) -> bool:
+        return isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "create_agent"
+
+    @staticmethod
+    def _target_name(target: ast.expr) -> str:
+        return target.id if isinstance(target, ast.Name) else "<unnamed>"
+
+    def _build_subagent(self, name: str, call: ast.Call) -> SubAgent:
+        """Build a SubAgent from a create_agent call's tools=[...] kwarg."""
+        tools_kw = next(
+            (kw for kw in call.keywords if kw.arg == "tools"),
+            None,
+        )
+        if tools_kw is None:
+            return SubAgent(name=name)
+
+        tools, unresolved = self._parse_tools_list(tools_kw.value)
+        return SubAgent(name=name, tools=tools, unresolved=unresolved)
+
+    def _parse_tools_list(self, value: ast.expr) -> (List[str], bool):
+        """Parse a create_agent tools=[...] argument into (names, unresolved).
+
+        Handles ast.List literals (Name function refs / Constant string names).
+        A variable reference marks the whole list unresolved.
+        """
+        if isinstance(value, ast.Name):
+            return [], True
+
+        if not isinstance(value, ast.List):
+            return [], False
+
+        names = []
+        for elt in value.elts:
+            if isinstance(elt, ast.Name):
+                names.append(elt.id)
+            elif isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                names.append(elt.value)
+            # Other forms (calls, nested lists) are skipped.
+        return names, False
 
     def _get_decorator_name(self, decorator: ast.expr) -> Optional[str]:
         """Extract decorator name from AST node"""
