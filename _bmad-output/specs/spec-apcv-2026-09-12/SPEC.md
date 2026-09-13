@@ -71,7 +71,7 @@ open_questions:
 
 | 能力 | 状态 | 实际 vs 计划 |
 |---|---|---|
-| CAP-1 工具面发现 | ⚠️ 部分 | 四层规划:①框架层多文件=story 4.1(ready);②MCP=story 4.2;③运行时内建(裸 LangGraph 无隐式工具,deepagents middleware 属框架层变体,不单独立);④子Agent 继承=story 4.4。当前仅框架层单文件已实现 |
+| CAP-1 工具面发现 | ⚠️ 部分 | 四层静态发现**已全部实现**:①框架层多文件(story 4.1 done,`scan_package`);②MCP 端点清单(story 4.2 done,`mcp_servers`);③运行时内建(经调研:裸 LangGraph 无隐式工具,deepagents middleware 属框架层变体,不单独立);④子Agent 工具面枚举(story 4.4 done,`sub_agents`)。**遗留**:MCP 工具枚举(运行时 list_tools,路线 B)、子Agent 继承链(who-invokes-whom,静态不可靠)未做 |
 | CAP-2 策略相对型探针 | ⚠️ 部分 | 生成机制完成,但探针库经重构**收敛为 7 条**(tool 4 + rate_limit 3),低于"≥15 条"门槛 |
 | CAP-3 隔离执行+参数追踪 | ⚠️ 部分 | Docker 隔离 + wrapt 追踪 + ProbeHost + JSONL 轨迹 + 并行**已实现**;<1% 开销从未测量;沙箱定位修正(见设计偏离) |
 | CAP-4 一致性+差异报告 | ⚠️ 部分 | 一致性检查完成;缺 **Markdown 报告**和每条违规的**修复提示** |
