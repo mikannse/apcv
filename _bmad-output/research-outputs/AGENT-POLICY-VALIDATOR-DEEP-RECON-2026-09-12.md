@@ -244,7 +244,7 @@ deny[msg] {
   - 输出 Tool SBOM（JSON 结构化）
   
 - [ ] **Policy Declaration Schema**（1 天）
-  - YAML DSL for capability boundaries
+  - 用于能力边界的 YAML DSL
   - Schema 验证 + IDE 提示
   
 - [ ] **Probe Generator & Executor**（2 天）
@@ -253,7 +253,7 @@ deny[msg] {
   - Docker 隔离执行
   
 - [ ] **Conformance Check Engine**（1 天）
-  - SBOM vs Execution Trace diff
+  - SBOM 与执行 Trace 的差异对比
   - JSON 结构化输出
   
 - [ ] **Policy Validator (OPA/Rego)**（1 天）
@@ -325,11 +325,11 @@ deny[msg] {
 
 | 传统领域 | Agent 安全对应 | 本项目的角色 |
 |---------|---------------|-----------|
-| SAST | Static Tool Scanning | Scanner 模块 |
-| DAST | Dynamic Probe Testing | Probe Generator + Executor |
-| Policy Engine | Policy Validator | OPA/Rego 层 |
-| CI/CD Gate | Pre-deployment Check | Conformance Validator |
-| Audit Trail | Execution Trace | 完整参数日志 |
+| SAST | 静态工具扫描 | Scanner 模块 |
+| DAST | 动态探针测试 | Probe Generator + Executor |
+| Policy Engine | 策略校验器 | OPA/Rego 层 |
+| CI/CD Gate | 部署前检查 | Conformance Validator |
+| Audit Trail | 执行 Trace | 完整参数日志 |
 
 **核心发现**：Agent Containment 问题是将**传统 DevSecOps (SAST + DAST + Policy)** 这套成熟方法应用到 autonomous agent 的新环境。
 

@@ -1,234 +1,234 @@
-# APCV Spec Creation Complete — Summary Report
+# APCV Spec 创建完成 — 总结报告
 
-**Project**: Agent Policy Conformance Validator (APCV)  
-**Spec Folder**: `d:\Projects\OCASC\_bmad-output\specs\spec-apcv-2026-09-12\`  
-**Completion Date**: 2026-09-12  
-**Status**: ✅ READY FOR DEVELOPMENT
-
----
-
-## Overview
-
-The APCV specification is now complete and ready for downstream consumers (architecture design, development teams, and stakeholder reviews). The spec was created using the BMad Spec-Kernel methodology, ensuring lean, coherent, load-bearing content.
+**项目**: Agent Policy Conformance Validator (APCV)  
+**Spec 目录**: `d:\Projects\OCASC\_bmad-output\specs\spec-apcv-2026-09-12\`  
+**完成日期**: 2026-09-12  
+**状态**: ✅ 可进入开发
 
 ---
 
-## What Was Created
+## 总览
 
-### 1. Core Kernel (SPEC.md)
-**Purpose**: Machine-readable contract for all downstream consumers
-
-**Contents**:
-- **Why**: Problem statement, market positioning, core innovation (Policy-Relative Probe)
-- **Capabilities (7)**: CAP-1 through CAP-7, each with intent + success signal
-- **Constraints (6)**: Design decisions that bend architecture (4-layer tool discovery, policy-relative generation, deterministic verification, isolated execution, MVP scope, developer-declared policy)
-- **Non-Goals (6)**: Explicit exclusions (runtime enforcement, prompt injection, adversarial agent, multi-framework MVP, IAM auto-inference, side-effect tracking)
-- **Success Signal**: Technical, product, market, and regulatory success metrics
-
-**Format**: 5-field kernel (lean, every sentence loads, no decoration)
+APCV 规格说明现已完成，可交付下游消费者（架构设计、开发团队与干系人评审）。本 spec 采用 BMad Spec-Kernel 方法论创建，确保内容精简、连贯且每句承重。
 
 ---
 
-### 2. Companion Files (Load-Bearing Content)
+## 产出内容
+
+### 1. 核心内核（SPEC.md）
+**用途**: 供所有下游消费者使用的机器可读契约
+
+**内容**:
+- **Why**: 问题陈述、市场定位、核心创新（策略相对型 Probe）
+- **Capabilities（7 项）**: CAP-1 至 CAP-7，每项含 intent + success 信号
+- **Constraints（6 项）**: 影响架构走向的设计决策（四层工具发现、策略相对型生成、确定性验证、隔离执行、MVP 范围、开发者声明策略）
+- **Non-Goals（6 项）**: 显式排除项（运行时强制、提示词注入、对抗式 agent、多框架 MVP、IAM 自动推断、副作用追踪）
+- **Success Signal**: 技术、产品、市场与监管四个维度的成功指标
+
+**格式**: 5 字段内核（精简，每句承重，无装饰性内容）
+
+---
+
+### 2. 配套文件（承重内容）
 
 #### probe-rules.md
-**Purpose**: Hardcoded probe rule catalog for MVP
+**用途**: MVP 使用的硬编码探针规则目录
 
-- 20–30 deterministic test cases
-- Categories: filesystem, tool invocation, privilege escalation, network, sub-agent, parameter constraints, rate limits
-- Each rule includes: ID, category, description, test command, expected outcome
-- Table format for easy reference
-- Execution semantics and trace format defined
+- 20–30 个确定性测试用例
+- 类别：文件系统、工具调用、权限提升、网络、子 Agent、参数约束、速率限制
+- 每条规则包含：ID、类别、描述、测试命令、预期结果
+- 采用表格格式，便于查阅
+- 定义了执行语义与轨迹格式
 
 #### policy-dsl-schema.md
-**Purpose**: Declared Policy format specification
+**用途**: 声明策略（Declared Policy）格式规格
 
-- YAML schema definition (tools, filesystem, network, parameters, rate_limits, privilege, compliance, environment)
-- Validation rules (mutual exclusion, path constraints, rate limit sanity, privilege consistency)
-- 3 reference examples: read-only, github-api, internal-admin
-- Web UI editing guidelines
-- Version & audit trail for policy changes
+- YAML schema 定义（tools、filesystem、network、parameters、rate_limits、privilege、compliance、environment）
+- 校验规则（互斥约束、路径约束、速率限制合理性、权限一致性）
+- 3 个参考示例：read-only、github-api、internal-admin
+- Web UI 编辑指引
+- 策略变更的版本与审计留痕
 
 #### architecture-diagrams.md
-**Purpose**: Visual and textual system architecture
+**用途**: 系统架构的图示与文字说明
 
-- High-level system architecture (Application → Core Engine → Adapter → Framework layers)
-- Complete data flow cycle (5 phases: discovery → generation → execution → conformance → verdict)
-- 4-Layer Tool Discovery model
-- Parameter tracing & wrapt integration diagram
-- Multi-container parallel execution flow
-- CLI to CI/CD integration
-- Compliance report output structure
-
----
-
-### 3. Self-Validation Report (VALIDATION-REPORT.md)
-
-**Two-Pass Validation**:
-
-**Pass 1 — Coherence**: Verified compliance with Spec Law rules 1-8
-- ✅ All 7 capabilities have both intent and success
-- ✅ Intents describe WHAT, not HOW
-- ✅ All 6 constraints actually bend design decisions
-- ✅ 6 explicit non-goals
-- ✅ Success signal is concrete and testable
-- ✅ Capability IDs stable and unique (CAP-1 through CAP-7)
-- ✅ Lean prose (no decoration)
-
-**Pass 2 — Preservation**: Every load-bearing claim from source documents mapped to spec
-- ✅ 100% of brainstorm-summary claims preserved
-- ✅ 100% of PROJECT-PLAN claims preserved
-- ✅ Wrapper-only content intentionally dropped (non-load-bearing)
-
-**Verdict**: ✅ SPEC VALID
+- 高层系统架构（Application → Core Engine → Adapter → Framework 各层）
+- 完整数据流闭环（5 个阶段：发现 → 生成 → 执行 → 一致性 → 判定）
+- 四层工具发现模型
+- 参数追踪与 wrapt 集成图
+- 多容器并行执行流程
+- CLI 到 CI/CD 的集成
+- 合规报告输出结构
 
 ---
 
-### 4. Story Breakdown (stories.yaml)
+### 3. 自校验报告（VALIDATION-REPORT.md）
 
-**8 Independently Shippable Stories** mapping 7 capabilities to 3-week MVP:
+**两遍校验**：
 
-| Story | Epic | Capabilities | Est. Days | Priority |
+**Pass 1 — 连贯性**：对照 Spec Law 规则 1-8 逐条核验
+- ✅ 全部 7 项 capability 均具备 intent 与 success
+- ✅ Intent 描述的是 WHAT，而非 HOW
+- ✅ 全部 6 项 constraint 确实左右了设计决策
+- ✅ 6 项显式 non-goal
+- ✅ Success signal 具体且可测试
+- ✅ Capability ID 稳定且唯一（CAP-1 至 CAP-7）
+- ✅ 文字精简（无装饰）
+
+**Pass 2 — 保留性**：源文档中的每一条承重论断均映射到 spec
+- ✅ brainstorm-summary 的论断 100% 保留
+- ✅ PROJECT-PLAN 的论断 100% 保留
+- ✅ 包装性（非承重）内容有意舍弃
+
+**结论**: ✅ SPEC VALID
+
+---
+
+### 4. 故事拆分（stories.yaml）
+
+**8 个可独立交付的故事**，将 7 项 capability 映射到 3 周 MVP：
+
+| Story | Epic | Capabilities | 预估天数 | 优先级 |
 |-------|------|--------------|-----------|----------|
-| story-1 | Week 1: Core Infrastructure | CAP-1 | 3 | Critical |
-| story-2 | Week 1: Policy Foundation | Policy DSL | 2.5 | Critical |
-| story-3 | Week 1-2: Dynamic Testing | CAP-2 | 3 | Critical |
-| story-4 | Week 2: Dynamic Validation | CAP-3 | 3 | Critical |
-| story-5 | Week 2: Verdict & Reporting | CAP-4 | 3 | Critical |
-| story-6 | Week 3: CLI Interface | CAP-5 | 2 | High |
-| story-7 | Week 3: Web UI | CAP-5, CAP-6 | 3 | High |
-| story-8 | Week 3: Demo & Delivery | All | 2 | High |
+| story-1 | 第 1 周：核心基础设施 | CAP-1 | 3 | Critical |
+| story-2 | 第 1 周：策略基础 | Policy DSL | 2.5 | Critical |
+| story-3 | 第 1-2 周：动态测试 | CAP-2 | 3 | Critical |
+| story-4 | 第 2 周：动态验证 | CAP-3 | 3 | Critical |
+| story-5 | 第 2 周：判定与报告 | CAP-4 | 3 | Critical |
+| story-6 | 第 3 周：CLI 界面 | CAP-5 | 2 | High |
+| story-7 | 第 3 周：Web UI | CAP-5、CAP-6 | 3 | High |
+| story-8 | 第 3 周：演示与交付 | 全部 | 2 | High |
 
-**Total**: 21.5 days → 15 working days with parallelization (3 weeks)
+**总计**: 21.5 天 → 通过并行压缩至 15 个工作日（3 周）
 
-**Critical Path**: story-1 → story-2 → story-3 → story-4 → story-5 (10 days)  
-**Parallel**: story-6 + story-7 after story-5 (3 days)  
-**Final**: story-8 (2 days)
+**关键路径**: story-1 → story-2 → story-3 → story-4 → story-5（10 天）  
+**并行**: story-6 + story-7 在 story-5 之后（3 天）  
+**收尾**: story-8（2 天）
 
 ---
 
-## Spec Folder Structure
+## Spec 目录结构
 
 ```
 spec-apcv-2026-09-12/
-├── SPEC.md                    ← Kernel (5-field, lean)
-├── .memlog.md                 ← Canonical decision log (append-only)
-├── VALIDATION-REPORT.md       ← Self-validation (Spec Law + Preservation)
+├── SPEC.md                    ← 内核（5 字段，精简）
+├── .memlog.md                 ← 权威决策日志（只追加）
+├── VALIDATION-REPORT.md       ← 自校验（Spec Law + 保留性）
 │
-├── Companions (spec-authored):
-├── probe-rules.md             ← Probe catalog (20-30 rules)
-├── policy-dsl-schema.md       ← Policy format + examples
-├── architecture-diagrams.md   ← System diagrams + flows
+├── 配套文件（spec 自著）:
+├── probe-rules.md             ← 探针目录（20-30 条规则）
+├── policy-dsl-schema.md       ← 策略格式 + 示例
+├── architecture-diagrams.md   ← 系统图 + 流程
 │
-├── stories.yaml               ← Sprint breakdown (8 stories, 3 weeks)
+├── stories.yaml               ← Sprint 拆分（8 个故事，3 周）
 │
-└── [Adopted Companions - sourced from inputs]:
-    └── (referenced in SPEC.md frontmatter, not stored here)
+└── [采纳的外部配套文件 - 源自输入文档]:
+    └── （在 SPEC.md frontmatter 中引用，不存放于此目录）
 ```
 
 ---
 
-## Key Decisions Captured in Memlog
+## Memlog 中沉淀的关键决策
 
-The `.memlog.md` file (append-only canonical log) preserves:
+`.memlog.md` 文件（只追加的权威日志）保留了：
 
-1. **Core Problem**: Verify declared vs actual Agent capabilities
-2. **Four-Layer Fragmentation**: MCP + framework-defined + runtime + sub-agent
-3. **Policy-Relative Innovation**: Probes adapt to declared boundaries (not fixed heuristics)
-4. **MVP Constraints**: LangGraph only, parameter-level tracing, hardcoded probes, developer-declared policy
-5. **Assumptions**: 5 explicit (LangGraph parseable, param tracing sufficient, Docker available, developer declares policy, compliance cares about audit trail)
-6. **Open Questions**: 3 explicit (false-positive threshold, Policy DSL language choice, multi-tenant isolation)
-
----
-
-## Downstream Consumers
-
-This spec is ready to feed:
-
-1. **bmad-create-architecture**: Detailed system design matching spec constraints
-2. **Dev Teams**: Build to spec with traceability
-3. **QA/Testing**: Validation plan based on success signals
-4. **Product/Marketing**: Market positioning, messaging, competitive analysis
-5. **Legal/Compliance**: Regulatory requirements (GDPR/SOX/ISO) mapped to spec
+1. **核心问题**: 验证 Agent 的声明能力与实际能力是否一致
+2. **四层碎片化**: MCP + 框架定义 + 运行时 + 子 Agent
+3. **策略相对型创新**: 探针随声明边界自适应（而非固定启发式）
+4. **MVP 约束**: 仅 LangGraph、参数级追踪、硬编码探针、开发者声明策略
+5. **假设**: 5 条显式假设（LangGraph 可静态解析、参数追踪足够、Docker 可用、由开发者声明策略、合规关注审计留痕）
+6. **待解问题**: 3 条显式（误报阈值、Policy DSL 语言选择、多租户隔离）
 
 ---
 
-## Quality Metrics
+## 下游消费者
 
-| Metric | Target | Achieved |
+本 spec 可直接喂给：
+
+1. **bmad-create-architecture**: 产出符合 spec 约束的详细系统设计
+2. **开发团队**: 按 spec 构建并保持可追溯性
+3. **QA/测试**: 基于 success 信号制定验证计划
+4. **产品/市场**: 市场定位、对外口径、竞品分析
+5. **法务/合规**: 将监管要求（GDPR/SOX/ISO）映射到 spec
+
+---
+
+## 质量指标
+
+| 指标 | 目标 | 达成 |
 |--------|--------|----------|
-| Spec Law Compliance | 8/8 rules | ✅ 8/8 |
-| Source Preservation | 100% load-bearing claims | ✅ 100% |
-| Capability Count | ≥5 | ✅ 7 |
-| Constraints Clarity | Each bends design | ✅ 6/6 |
-| Non-Goals Explicitness | ≥3 items | ✅ 6 |
-| Success Signal Concreteness | Testable without ambiguity | ✅ Yes |
-| Assumption Explicitness | Hidden assumptions named | ✅ 5 |
-| Open Question Capture | Unresolved gaps named | ✅ 3 |
-| Story Breakdown Coverage | All capabilities mapped | ✅ 100% |
-| Story Feasibility | 3-week MVP realistic | ✅ 21.5 days → 15 working days |
+| Spec Law 合规 | 8/8 规则 | ✅ 8/8 |
+| 源文档保留 | 100% 承重论断 | ✅ 100% |
+| Capability 数量 | ≥5 | ✅ 7 |
+| Constraint 清晰度 | 每条左右设计 | ✅ 6/6 |
+| Non-Goals 显式化 | ≥3 条 | ✅ 6 |
+| Success Signal 具体度 | 无歧义可测试 | ✅ 是 |
+| 假设显式化 | 命名隐藏假设 | ✅ 5 |
+| 待解问题记录 | 命名未决缺口 | ✅ 3 |
+| 故事拆分覆盖 | 全部 capability 映射 | ✅ 100% |
+| 故事可行性 | 3 周 MVP 现实可行 | ✅ 21.5 天 → 15 个工作日 |
 
 ---
 
-## Next Steps
+## 后续步骤
 
-### Immediate (Within 1 Week)
-1. **Review with Stakeholders**: Share SPEC.md + executive summary
-2. **Resolve Open Questions**: Decide on false-positive threshold, Policy DSL language, multi-tenant approach
-3. **Approve Story Breakdown**: Confirm sprint allocation and dependencies with dev team
-4. **Assign Story Owners**: Assign leads for each story
+### 即时（1 周内）
+1. **干系人评审**: 分享 SPEC.md + 执行摘要
+2. **敲定待解问题**: 决定误报阈值、Policy DSL 语言、多租户方案
+3. **确认故事拆分**: 与开发团队确认 sprint 安排与依赖关系
+4. **指派故事 Owner**: 为每个故事指定负责人
 
-### Week 1-3 (Sprint Execution)
-- Follow stories.yaml sprint plan
-- Each story links back to SPEC.md via spec_checkpoint
-- Update .memlog.md as decisions are made
-- Weekly validation: Are we tracking to spec?
+### 第 1-3 周（Sprint 执行）
+- 按 stories.yaml 的 sprint 计划推进
+- 每个故事通过 spec_checkpoint 回链到 SPEC.md
+- 决策产生时更新 .memlog.md
+- 每周校验：我们是否仍对齐 spec？
 
-### Post-MVP (Sprint 2+)
-- **Multi-Framework Support**: Add AgentScope, AutoGen (architecture ready)
-- **LLM-Assisted Probe Gen**: Dynamic probe generation (marked "Could Have")
-- **Runtime Monitoring**: Extend from pre-deployment to runtime surveillance
-- **Commercial Path**: SaaS offering, open-source community building
+### MVP 之后（Sprint 2+）
+- **多框架支持**: 加入 AgentScope、AutoGen（架构已预留）
+- **LLM 辅助探针生成**: 动态探针生成（标记为"Could Have"）
+- **运行时监控**: 从部署前扩展到运行时持续监视
+- **商业化路径**: SaaS 服务、开源社区建设
 
 ---
 
-## Files Ready for Handoff
+## 可交付的文件
 
 ```
 d:\Projects\OCASC\_bmad-output\specs\spec-apcv-2026-09-12\
 
-├── SPEC.md                      [READ: Stakeholders, Dev Teams, Architecture]
-├── stories.yaml                 [READ: Dev Team Leads, Project Manager]
-├── VALIDATION-REPORT.md         [READ: QA, Architecture Reviewers]
-├── .memlog.md                   [MAINTAIN: Append future decisions here]
-├── probe-rules.md               [READ: Backend Team, QA]
-├── policy-dsl-schema.md         [READ: Backend Team, Policy Team]
-└── architecture-diagrams.md     [READ: All Technical Stakeholders]
+├── SPEC.md                      [阅读: 干系人、开发团队、架构]
+├── stories.yaml                 [阅读: 开发团队负责人、项目经理]
+├── VALIDATION-REPORT.md         [阅读: QA、架构评审人]
+├── .memlog.md                   [维护: 未来的决策追加到此]
+├── probe-rules.md               [阅读: 后端团队、QA]
+├── policy-dsl-schema.md         [阅读: 后端团队、策略团队]
+└── architecture-diagrams.md     [阅读: 全体技术干系人]
 ```
 
 ---
 
-## Summary
+## 总结
 
-✅ **SPEC COMPLETE AND VALID**
+✅ **SPEC 已完成并通过校验**
 
-**4 Steps Completed**:
-1. ✅ **SPEC.md Created** (5-field kernel, 7 capabilities, 6 constraints, 6 non-goals)
-2. ✅ **Companions Created** (probe-rules, policy-dsl-schema, architecture-diagrams)
-3. ✅ **Self-Validated** (Spec Law 8/8, Source Preservation 100%)
-4. ✅ **Story Breakdown** (8 stories, 3 weeks, MVP-feasible)
+**4 步已完成**：
+1. ✅ **SPEC.md 已创建**（5 字段内核，7 项 capability、6 项 constraint、6 项 non-goal）
+2. ✅ **配套文件已创建**（probe-rules、policy-dsl-schema、architecture-diagrams）
+3. ✅ **自校验通过**（Spec Law 8/8，源文档保留 100%）
+4. ✅ **故事拆分完成**（8 个故事，3 周，MVP 可行）
 
-**Ready for**:
-- Architecture design sprint
-- Development team onboarding
-- Stakeholder reviews
-- 3-week MVP execution
+**可用于**:
+- 架构设计 sprint
+- 开发团队入场
+- 干系人评审
+- 3 周 MVP 执行
 
-**Confidence Level**: 🟢 HIGH — Spec is coherent, preserved all load-bearing claims, explicitly marks assumptions and gaps, provides sufficient detail for downstream consumers.
+**信心等级**: 🟢 高 — Spec 连贯自洽，保留了全部承重论断，显式标注假设与缺口，并为下游消费者提供了充分细节。
 
 ---
 
-**Created by**: bmad-spec skill  
-**Methodology**: BMad Spec-Kernel  
-**Date**: 2026-09-12  
-**For**: Apart Research AI Incident Response Track 1 (Containment) - Agent Policy Conformance Validator MVP
+**创建者**: bmad-spec skill  
+**方法论**: BMad Spec-Kernel  
+**日期**: 2026-09-12  
+**面向**: Apart Research AI Incident Response Track 1 (Containment) - Agent Policy Conformance Validator MVP

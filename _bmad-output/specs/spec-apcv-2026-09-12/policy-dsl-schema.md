@@ -1,13 +1,13 @@
 # Policy DSL Schema
 
-Declared Policy is a YAML file authored by Agent developers to declare what their Agent is allowed to do. It serves as the **baseline** against which Probes test for boundary violations.
+声明策略（Declared Policy）是由 Agent 开发者编写的 YAML 文件，用于声明其 Agent 被允许做什么。它是探针（Probe）进行越界测试所依据的**基线**。
 
-## Schema Definition
+## Schema 定义
 
 ```yaml
 # policy.yaml
 
-version: "1.0"  # Schema version
+version: "1.0"  # Schema 版本
 
 metadata:
   agent_name: github-assistant
@@ -17,7 +17,7 @@ metadata:
   description: "GitHub API read-only agent; no system calls"
 
 tools:
-  # Which tools can the Agent invoke?
+  # Agent 可以调用哪些工具？
   allowed:
     - read_file
     - http_get
@@ -30,30 +30,30 @@ tools:
     - write_file
 
 filesystem:
-  # What filesystem paths can the Agent access?
+  # Agent 可以访问哪些文件系统路径？
   enabled: true
   allowed_paths:
-    - /data/github_repos  # Can read
-    - /tmp/scratch        # Can read/write
+    - /data/github_repos  # 可读
+    - /tmp/scratch        # 可读写
   denied_paths:
     - /etc
     - /root
     - /home
   access_modes:
     read: true
-    write: false         # No writes to /data
+    write: false         # 不允许写入 /data
     execute: false
-  symlink_traversal: false  # Disallow symlinks
+  symlink_traversal: false  # 禁止符号链接
 
 network:
-  # Network access policies
+  # 网络访问策略
   enabled: true
   allowed_domains:
     - api.github.com
     - raw.githubusercontent.com
   denied_domains:
     - internal.company.com
-    - 169.254.169.254  # AWS metadata service
+    - 169.254.169.254  # AWS 元数据服务
   allowed_ports:
     - 443
     - 80
@@ -63,10 +63,10 @@ network:
     - 6379 # Redis
 
 parameters:
-  # Constraints on tool parameters
+  # 对工具参数的约束
   read_file:
     max_file_size: "10MB"
-    path_pattern: "^/data/.*"    # Regex whitelist
+    path_pattern: "^/data/.*"    # 正则白名单
   
   http_get:
     domain_whitelist:
@@ -76,7 +76,7 @@ parameters:
     max_body_size: "5MB"
 
 rate_limits:
-  # Frequency and quota constraints
+  # 频率与配额约束
   read_file:
     max_calls_per_minute: 60
     max_calls_per_hour: 1000
@@ -86,20 +86,20 @@ rate_limits:
     max_calls_per_hour: 500
 
 privilege:
-  # Privilege-related constraints
+  # 权限相关约束
   allow_sudo: false
   allow_suid: false
   allow_capability_escalation: false
-  required_user: "nobody"  # Run as non-root
+  required_user: "nobody"  # 以非 root 身份运行
 
 sub_agents:
-  # How do sub-agents inherit this policy?
+  # 子 Agent 如何继承本策略？
   inheritance_mode: "strict"  # strict | relaxed | custom
-  # strict = sub-agents get exact same constraints
-  # relaxed = sub-agents can have subset of parent permissions
+  # strict = 子 Agent 获得完全相同的约束
+  # relaxed = 子 Agent 可拥有父级权限的子集
   
 environment:
-  # Environment variable access
+  # 环境变量访问
   allowed_vars:
     - GITHUB_TOKEN
     - AGENT_CONFIG
@@ -109,33 +109,33 @@ environment:
     - DATABASE_PASSWORD
 
 compliance:
-  # Regulatory requirements
+  # 监管要求
   scopes:
-    - gdpr          # EU data protection
-    - sox           # Financial audit
-    - iso27001      # Information security
+    - gdpr          # 欧盟数据保护
+    - sox           # 财务审计
+    - iso27001      # 信息安全
   
   data_classification: "internal"  # public | internal | confidential | restricted
 
 severity_levels:
-  # How strict is policy enforcement?
+  # 策略执行的严格程度如何？
   mode: "strict"  # strict | balanced | report-only
-  # strict = any violation → FAIL + block deployment
-  # balanced = critical violation → FAIL; warning violations → WARN
-  # report-only = log all violations but don't block
+  # strict = 任何违规 → FAIL + 阻止部署
+  # balanced = critical 违规 → FAIL；warning 违规 → WARN
+  # report-only = 记录全部违规但不阻止
 ```
 
-## Validation Rules
+## 校验规则
 
-1. **Mutual Exclusion**: A tool cannot be both in `allowed` and `denied`
-2. **Path Constraints**: `allowed_paths` and `denied_paths` must not overlap; regex patterns must be valid
-3. **Rate Limits**: `max_calls_per_minute` ≤ `max_calls_per_hour` ÷ 60
-4. **Sub-agent Inheritance**: If `sub_agents.inheritance_mode = strict`, sub-agent policy must be identical or subset
-5. **Privilege Sanity**: If `allow_sudo = true`, `required_user` cannot be `nobody`
+1. **互斥约束**：一个工具不能同时出现在 `allowed` 和 `denied` 中
+2. **路径约束**：`allowed_paths` 与 `denied_paths` 不得重叠；正则模式必须合法
+3. **速率限制**：`max_calls_per_minute` ≤ `max_calls_per_hour` ÷ 60
+4. **子 Agent 继承**：若 `sub_agents.inheritance_mode = strict`，子 Agent 策略必须与父级完全相同或为其子集
+5. **权限合理性**：若 `allow_sudo = true`，则 `required_user` 不能为 `nobody`
 
-## Policy DSL Examples
+## Policy DSL 示例
 
-### Example 1: Strict Read-Only Agent
+### 示例 1：严格只读 Agent
 
 ```yaml
 version: "1.0"
@@ -154,13 +154,13 @@ filesystem:
   access_modes: {read: true, write: false, execute: false}
 
 network:
-  enabled: false  # No network
+  enabled: false  # 禁用网络
 
 severity_levels:
   mode: strict
 ```
 
-### Example 2: GitHub API Agent (Moderate)
+### 示例 2：GitHub API Agent（中等严格度）
 
 ```yaml
 version: "1.0"
@@ -190,7 +190,7 @@ severity_levels:
   mode: balanced
 ```
 
-### Example 3: Internal Tool Agent (Complex)
+### 示例 3：内部工具 Agent（复杂场景）
 
 ```yaml
 version: "1.0"
@@ -218,26 +218,26 @@ parameters:
 
 rate_limits:
   write_file:
-    max_calls_per_hour: 10  # Limit write operations
+    max_calls_per_hour: 10  # 限制写操作次数
 
 severity_levels:
   mode: strict
 ```
 
-## Policy Editing in Web UI
+## Web UI 中的策略编辑
 
-The Web UI provides a **YAML editor** with:
+Web UI 提供一个 **YAML 编辑器**，具备：
 
-- **Syntax highlighting** for YAML
-- **Real-time validation** against schema
-- **Auto-completion** for known tool names, filesystem paths, domains
-- **Template library** (read-only, denied, github-api, internal-admin presets)
-- **Diff viewer** (before/after policy change, impact analysis)
-- **Test preview** (show probes that will be generated for this policy)
+- **语法高亮**（针对 YAML）
+- 依据 schema 进行**实时校验**
+- 对已知工具名、文件系统路径、域名提供**自动补全**
+- **模板库**（read-only、denied、github-api、internal-admin 等预设）
+- **Diff 查看器**（策略变更前/后对比、影响分析）
+- **测试预览**（展示将为此策略生成的探针）
 
-## Version & Audit Trail
+## 版本与审计留痕
 
-Policy updates are versioned; every change is logged:
+策略更新按版本管理；每一次变更都被记录：
 
 ```json
 {
@@ -249,4 +249,4 @@ Policy updates are versioned; every change is logged:
 }
 ```
 
-This audit trail is included in compliance reports.
+该审计留痕会被纳入合规报告。

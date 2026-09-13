@@ -1,0 +1,14 @@
+# Normalize line endings: store LF in the repo, let each platform check out
+# its native ending. Prevents the CRLF/LF churn seen on Windows (core.autocrlf
+# alone is not enough once files were committed with mixed endings).
+* text=auto
+
+# Documents and code stay LF in the index regardless of platform.
+*.md  text eol=lf
+*.py  text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.sh  text eol=lf
+Dockerfile text eol=lf

@@ -1,379 +1,378 @@
 stories:
   - id: story-1
-    title: "Framework Setup & Tool Discovery Foundation"
-    epic: "Week 1: Core Infrastructure"
+    title: "框架搭建与工具发现基础"
+    epic: "第 1 周：核心基础设施"
 
     description: |
-      Establish project scaffolding, implement LangGraph AST parser, and discover static tool surface.
-      Includes build pipeline, testing framework, and basic tool registry.
+      建立项目脚手架，实现 LangGraph AST 解析器，并完成静态工具面发现。
+      包含构建流水线、测试框架与基础工具注册表。
 
     spec_checkpoint: |
-      Completes CAP-1 (Tool Surface Discovery - static layer only)
-      Lays foundation for CAP-2, CAP-3, CAP-5
+      完成 CAP-1（工具面发现——仅静态层）
+      为 CAP-2、CAP-3、CAP-5 打下基础
 
     done_checkpoint: |
-      ✅ GitHub repo initialized with CI/CD (GitHub Actions)
-      ✅ LangGraph @tool decorator extraction via AST (>95% accuracy on test suite)
-      ✅ Tool SBOM JSON output format defined and tested
-      ✅ Unit tests for tool discovery (coverage >80%)
-      ✅ No runtime capability detection yet (defer to story-3)
+      ✅ GitHub 仓库初始化，并配置 CI/CD（GitHub Actions）
+      ✅ 通过 AST 抽取 LangGraph @tool 装饰器（测试套件准确率 >95%）
+      ✅ Tool SBOM JSON 输出格式已定义并通过测试
+      ✅ 工具发现的单元测试（覆盖率 >80%）
+      ✅ 暂不包含运行时能力检测（推迟到 story-3）
 
     invoke_dev_with: |
-      - Set up monorepo structure: /apcv/{core,cli,ui,tests,docs}
-      - Implement ToolDiscovery.discover_static() using ast + tree-sitter
-      - Create fixtures: 5-10 sample LangGraph agents for testing
-      - Integration tests: validate SBOM accuracy against known tool sets
+      - 搭建 monorepo 结构：/apcv/{core,cli,ui,tests,docs}
+      - 基于 ast + tree-sitter 实现 ToolDiscovery.discover_static()
+      - 创建测试夹具：5-10 个用于测试的 LangGraph 示例 agent
+      - 集成测试：针对已知工具集校验 SBOM 准确率
 
-    user_story: "As a DevOps engineer, I want the validator to automatically discover what tools a LangGraph Agent can invoke, so I can understand the complete capability surface before creating policy."
+    user_story: "作为一名 DevOps 工程师，我希望验证器能自动发现 LangGraph Agent 可调用的全部工具，以便我在制定策略之前先理解完整的能力面。"
 
     acceptance_criteria:
-      - Tool discovery finds all @tool decorators in LangGraph code
-      - Output is valid JSON matching schema
-      - Processing time <10 seconds on typical Agent code
-      - No false positives (undeclared tools marked as found)
+      - 工具发现能找出 LangGraph 代码中所有 @tool 装饰器
+      - 输出为符合 schema 的合法 JSON
+      - 对典型 Agent 代码的处理时间 <10 秒
+      - 无误报（不得把未声明的工具标记为已发现）
 
     estimate_days: 3
     assignee: backend-team
     priority: critical
 
   - id: story-2
-    title: "Policy DSL & Validation Engine"
-    epic: "Week 1: Policy Foundation"
+    title: "Policy DSL 与校验引擎"
+    epic: "第 1 周：策略基础"
 
     description: |
-      Design and implement Policy DSL (YAML schema), validator, and error reporting.
-      Enable developers to declare Agent constraints in a standard format.
+      设计并实现 Policy DSL（YAML schema）、校验器与错误报告。
+      让开发者能以标准格式声明 Agent 的约束。
 
     spec_checkpoint: |
-      Completes policy declaration layer (input to CAP-2 and CAP-4)
-      Enables policy-driven validation for all downstream stories
+      完成策略声明层（CAP-2 与 CAP-4 的输入）
+      为所有下游故事启用策略驱动的校验
 
     done_checkpoint: |
-      ✅ Policy YAML schema defined (tools, filesystem, network, parameters, rate_limits, privilege, compliance)
-      ✅ Schema validator (jsonschema validation against canonical schema)
-      ✅ Error reporting (friendly messages for policy violations)
-      ✅ Policy examples: read-only, github-api, internal-admin archetypes
-      ✅ Unit tests: valid and invalid policies (coverage >80%)
+      ✅ Policy YAML schema 已定义（tools、filesystem、network、parameters、rate_limits、privilege、compliance）
+      ✅ Schema 校验器（基于 jsonschema 对照权威 schema 进行校验）
+      ✅ 错误报告（针对策略违规给出友好提示）
+      ✅ 策略示例：read-only、github-api、internal-admin 三类原型
+      ✅ 单元测试：合法与非法策略（覆盖率 >80%）
 
     invoke_dev_with: |
-      - Define schema in YAML (reference: policy-dsl-schema.md companion)
-      - Implement PolicyValidator class using jsonschema library
-      - Create 3-5 reference policy templates
-      - Add IDE integration hints (VS Code schema support, JSON schema endpoint)
+      - 以 YAML 定义 schema（参考：policy-dsl-schema.md 配套文件）
+      - 基于 jsonschema 库实现 PolicyValidator 类
+      - 创建 3-5 个参考策略模板
+      - 增加 IDE 集成提示（VS Code schema 支持、JSON schema 端点）
 
-    user_story: "As a security engineer, I want to declare Agent policy constraints in a standard YAML format, so I can version control policies and integrate them into CI/CD."
+    user_story: "作为一名安全工程师，我希望以标准 YAML 格式声明 Agent 的策略约束，以便对策略进行版本管理并集成进 CI/CD。"
 
     acceptance_criteria:
-      - Valid policy YAML parses without error
-      - Invalid policy produces clear error message
-      - Policy can be applied to multiple Agents
-      - Schema supports all constraint types (tools, filesystem, network, privilege, rate limits)
+      - 合法的策略 YAML 能无错误解析
+      - 非法策略会给出清晰的错误信息
+      - 同一策略可应用于多个 Agent
+      - Schema 支持全部约束类型（tools、filesystem、network、privilege、rate limits）
 
     estimate_days: 2.5
     assignee: backend-team
     priority: critical
 
   - id: story-3
-    title: "Probe Rules Library & Policy-Relative Generation"
-    epic: "Week 1-2: Dynamic Testing Foundation"
+    title: "Probe 规则库与策略相对型生成"
+    epic: "第 1-2 周：动态测试基础"
 
     description: |
-      Build 20-30 deterministic probe rules covering filesystem, tool invocation, privilege escalation,
-      and network categories. Implement probe generator that creates policy-relative test cases.
+      构建 20-30 条确定性探针规则，覆盖文件系统、工具调用、权限提升
+      与网络访问类别。实现生成策略相对型测试用例的探针生成器。
 
     spec_checkpoint: |
-      Completes CAP-2 (Policy-Relative Probe Generation)
-      Enables probe execution and conformance checking in story-4+
+      完成 CAP-2（策略相对型 Probe 生成）
+      为 story-4 及之后的探针执行与一致性检查奠定基础
 
     done_checkpoint: |
-      ✅ 20-30 probe rules implemented (hardcoded, not LLM-generated)
-      ✅ Probe generator selects rules based on policy constraints
-      ✅ Policy-relative logic: probes adapt to declared policy boundaries
-      ✅ Probe JSON format: id, category, description, test_command, expected_outcome
-      ✅ Unit tests: verify probe generation for various policy types (coverage >80%)
+      ✅ 实现 20-30 条探针规则（硬编码，非 LLM 生成）
+      ✅ 探针生成器依据策略约束选择规则
+      ✅ 策略相对型逻辑：探针随声明的策略边界自适应
+      ✅ 探针 JSON 格式：id、category、description、test_command、expected_outcome
+      ✅ 单元测试：针对多种策略类型验证探针生成（覆盖率 >80%）
 
     invoke_dev_with: |
-      - Implement ProbeLibrary class with 20-30 hardcoded rules
-      - Implement ProbeGenerator: takes Policy → outputs Probe suite (≥15 probes)
-      - Policy-relative logic: if policy says "read-only", generate write probes; if policy denies bash, generate bash probes
-      - Test against reference policies (read-only, github-api, internal-admin)
+      - 实现 ProbeLibrary 类，内置 20-30 条硬编码规则
+      - 实现 ProbeGenerator：输入 Policy → 输出探针套件（≥15 个探针）
+      - 策略相对型逻辑：策略声明"只读"则生成写入探针；策略禁止 bash 则生成 bash 探针
+      - 针对参考策略进行测试（read-only、github-api、internal-admin）
 
-    user_story: "As a security team, I want the validator to automatically generate boundary-crossing tests based on declared policy, so I can verify Agents actually respect their stated constraints."
+    user_story: "作为安全团队，我希望验证器基于声明的策略自动生成越界测试，以便确认 Agent 确实遵守其声明的约束。"
 
     acceptance_criteria:
-      - Probe generation runs <5 seconds for any policy
-      - Generated probes match policy scope (≥15 probes for non-trivial policy)
-      - Each probe has clear pass/fail semantics
-      - Probe library covers filesystem, tool, privilege, network, rate-limit categories
+      - 对任意策略，探针生成耗时 <5 秒
+      - 生成的探针与策略范围匹配（非平凡策略至少 15 个探针）
+      - 每个探针都有明确的通过/失败语义
+      - 探针库覆盖 filesystem、tool、privilege、network、rate-limit 类别
 
     estimate_days: 3
     assignee: backend-team + security-engineer
     priority: critical
 
   - id: story-4
-    title: "Isolated Execution & Parameter Tracing"
-    epic: "Week 2: Dynamic Validation"
+    title: "隔离执行与参数追踪"
+    epic: "第 2 周：动态验证"
 
     description: |
-      Implement Docker-based probe executor, wrapt parameter tracing, and execution trace collection.
-      Run probes in isolated, repeatable environments and record all tool invocations.
+      实现基于 Docker 的探针执行器、wrapt 参数追踪与执行轨迹收集。
+      在隔离、可复现的环境中运行探针并记录所有工具调用。
 
     spec_checkpoint: |
-      Completes CAP-3 (Isolated Probe Execution & Parameter Tracing)
-      Produces execution traces for CAP-4 conformance checking
+      完成 CAP-3（隔离的 Probe 执行与参数追踪）
+      为 CAP-4 的一致性检查产出执行轨迹
 
     done_checkpoint: |
-      ✅ Docker image (apcv-probe) with base Agent runtime
-      ✅ IsolatedExecutor: spawn Docker containers, inject probes, capture results
-      ✅ wrapt parameter tracing: <1% overhead, captures 100% of tool calls
-      ✅ Execution trace JSONL format (timestamp, tool, args, result, policy_violation)
-      ✅ Parallel probe execution (4 concurrent workers, total <60s for 30 probes)
-      ✅ Container lifecycle tests: cleanup, isolation, no cross-pollution
+      ✅ Docker 镜像（apcv-probe），含基础 Agent 运行时
+      ✅ IsolatedExecutor：启动 Docker 容器、注入探针、捕获结果
+      ✅ wrapt 参数追踪：开销 <1%，捕获 100% 的工具调用
+      ✅ 执行轨迹 JSONL 格式（timestamp、tool、args、result、policy_violation）
+      ✅ 并行探针执行（4 个并发 worker，30 个探针总耗时 <60 秒）
+      ✅ 容器生命周期测试：清理、隔离、无交叉污染
 
     invoke_dev_with: |
-      - Build Docker image: base Python runtime + LangGraph + wrapt
-      - Implement IsolatedExecutor: Docker API client, run_probe(), execute_parallel()
-      - Implement @trace_parameters decorator using wrapt
-      - Integration tests: run 30 probes in parallel, verify traces, measure overhead (<1%)
+      - 构建 Docker 镜像：基础 Python 运行时 + LangGraph + wrapt
+      - 实现 IsolatedExecutor：Docker API 客户端、run_probe()、execute_parallel()
+      - 基于 wrapt 实现 @trace_parameters 装饰器
+      - 集成测试：并行运行 30 个探针、校验轨迹、测量开销（<1%）
 
-    user_story: "As a DevOps engineer, I want probes to run in isolated environments so that we can safely test Agent boundaries without affecting production systems."
+    user_story: "作为一名 DevOps 工程师，我希望探针在隔离环境中运行，从而在不影响生产系统的前提下安全地测试 Agent 边界。"
 
     acceptance_criteria:
-      - All 20-30 probes execute within <60 seconds total (including container startup)
-      - Parameter tracing records 100% of tool invocations with overhead <1%
-      - Docker containers are isolated (read-only FS, no network, clean state)
-      - No cross-pollution between concurrent probe runs
-      - Execution traces are collected and formatted correctly
+      - 全部 20-30 个探针在 60 秒内执行完成（含容器启动）
+      - 参数追踪记录 100% 的工具调用，开销 <1%
+      - Docker 容器相互隔离（只读文件系统、无网络、干净状态）
+      - 并发探针运行之间无交叉污染
+      - 执行轨迹被正确收集并格式化
 
     estimate_days: 3
     assignee: backend-team + devops
     priority: critical
 
   - id: story-5
-    title: "Conformance Check & Diff Report Generation"
-    epic: "Week 2: Verdict & Reporting"
+    title: "一致性检查与差异报告生成"
+    epic: "第 2 周：判定与报告"
 
     description: |
-      Implement conformance checker (compares SBOM vs traces), violation detection,
-      and policy validation rules. Generate detailed diff reports and compliance scores.
+      实现一致性检查器（比对 SBOM 与轨迹）、违规检测与策略校验规则。
+      生成详细的差异报告与合规评分。
 
     spec_checkpoint: |
-      Completes CAP-4 (Conformance Check & Diff Report)
-      Produces PASS/FAIL verdict and audit-ready violation details
+      完成 CAP-4（一致性检查与差异报告）
+      产出 PASS/FAIL 判定与可供审计的违规细节
 
     done_checkpoint: |
-      ✅ ConformanceChecker: compare Tool SBOM vs Execution Trace
-      ✅ Violation detection: undeclared tools, parameter violations, hidden capabilities
-      ✅ Compliance score algorithm (0-100 based on violation severity)
-      ✅ Policy validator: apply rule engine, determine PASS/FAIL/WARN
-      ✅ Diff report (JSON + Markdown): violations, remediation hints, audit trail
-      ✅ Unit & integration tests: various violation scenarios
+      ✅ ConformanceChecker：比对 Tool SBOM 与执行轨迹
+      ✅ 违规检测：未声明工具、参数违规、隐藏能力
+      ✅ 合规评分算法（0-100，基于违规严重级别）
+      ✅ 策略校验器：应用规则引擎，给出 PASS/FAIL/WARN
+      ✅ 差异报告（JSON + Markdown）：违规项、修复提示、审计留痕
+      ✅ 单元与集成测试：覆盖多种违规场景
 
     invoke_dev_with: |
-      - Implement ConformanceChecker class
-      - Implement violation detection logic (tool, parameter, hidden capability checks)
-      - Implement compliance_score formula (e.g., 100 - 10*num_violations)
-      - Implement DiffReport class: JSON + Markdown output
-      - Integration tests: known violation scenarios (undeclared tool, path violation, etc.)
+      - 实现 ConformanceChecker 类
+      - 实现违规检测逻辑（工具、参数、隐藏能力检查）
+      - 实现 compliance_score 公式（如 100 - 10*num_violations）
+      - 实现 DiffReport 类：输出 JSON + Markdown
+      - 集成测试：已知违规场景（未声明工具、路径违规等）
 
-    user_story: "As a security engineer, I want detailed reports showing exactly which policies the Agent violates, so I can guide developers to fix their code or update policies appropriately."
+    user_story: "作为一名安全工程师，我希望获得详细报告，精确指出 Agent 违反了哪些策略，以便指导开发者修正代码或恰当地更新策略。"
 
     acceptance_criteria:
-      - Report identifies all violations (tool, parameter, hidden capabilities)
-      - Compliance score clearly reflects violation severity
-      - Diff shows declared vs actual side-by-side
-      - Report includes remediation suggestions
-      - Output formats: JSON (machine-readable), Markdown (human-readable)
+      - 报告识别出所有违规（工具、参数、隐藏能力）
+      - 合规评分清晰反映违规严重级别
+      - 差异报告并排展示声明与实际
+      - 报告包含修复建议
+      - 输出格式：JSON（机器可读）、Markdown（人读）
 
     estimate_days: 3
     assignee: backend-team + security-engineer
     priority: critical
 
   - id: story-6
-    title: "CLI Tool (apcv validate)"
-    epic: "Week 3: User Interface & CI/CD Integration"
+    title: "CLI 工具（apcv validate）"
+    epic: "第 3 周：用户界面与 CI/CD 集成"
 
     description: |
-      Implement command-line interface for validating Agents. Support standard options,
-      output formats (JSON, SARIF), and CI/CD pipeline integration.
+      实现用于验证 Agent 的命令行界面。支持标准选项、
+      输出格式（JSON、SARIF）与 CI/CD 流水线集成。
 
     spec_checkpoint: |
-      Completes CAP-5 (CLI interface)
-      Enables DevOps integration in CI/CD pipelines
+      完成 CAP-5（CLI 界面）
+      支持在 CI/CD 流水线中的 DevOps 集成
 
     done_checkpoint: |
-      ✅ CLI command: apcv validate --agent <path> --policy <yaml> --output {json,sarif,html}
-      ✅ Exit codes: 0 (PASS), 1 (FAIL), 2 (ERROR)
-      ✅ Output formats: JSON, SARIF, HTML
-      ✅ Integration with GitHub Actions, GitLab CI (documented)
-      ✅ Help text, examples, error handling
-      ✅ CLI tests: various option combinations
+      ✅ CLI 命令：apcv validate --agent <path> --policy <yaml> --output {json,sarif,html}
+      ✅ 退出码：0（PASS）、1（FAIL）、2（ERROR）
+      ✅ 输出格式：JSON、SARIF、HTML
+      ✅ 与 GitHub Actions、GitLab CI 的集成（有文档）
+      ✅ 帮助文本、示例、错误处理
+      ✅ CLI 测试：多种选项组合
 
     invoke_dev_with: |
-      - Use Click or Typer for CLI framework
-      - Implement Command: validate (--agent, --policy, --output, --fail-on)
-      - Implement output formatters (JSON, SARIF, HTML)
-      - Create CI/CD integration examples (GitHub Actions, GitLab CI)
-      - CLI tests: valid/invalid args, exit codes, output formats
+      - 使用 Click 或 Typer 作为 CLI 框架
+      - 实现 validate 命令（--agent、--policy、--output、--fail-on）
+      - 实现输出格式化器（JSON、SARIF、HTML）
+      - 编写 CI/CD 集成示例（GitHub Actions、GitLab CI）
+      - CLI 测试：合法/非法参数、退出码、输出格式
 
-    user_story: "As a DevOps engineer, I want to run apcv validate from CI/CD pipelines so that Agent validation is automated as part of my deployment process."
+    user_story: "作为一名 DevOps 工程师，我希望在 CI/CD 流水线中运行 apcv validate，让 Agent 验证成为部署流程中自动化的一环。"
 
     acceptance_criteria:
-      - CLI command works end-to-end
-      - Supports all necessary options
-      - Exit codes are correct (0/1/2)
-      - Output formats are correct and parseable
-      - Documentation includes CI/CD examples
-      - Help text is clear and useful
+      - CLI 命令端到端可用
+      - 支持全部必要选项
+      - 退出码正确（0/1/2）
+      - 输出格式正确且可解析
+      - 文档包含 CI/CD 示例
+      - 帮助文本清晰实用
 
     estimate_days: 2
     assignee: cli-team
     priority: high
 
   - id: story-7
-    title: "Web UI (Dashboard, Policy Editor, Reports)"
-    epic: "Week 3: User Interface & Visualization"
+    title: "Web UI（看板、策略编辑器、报告）"
+    epic: "第 3 周：用户界面与可视化"
 
     description: |
-      Implement web dashboard showing Agent list, compliance scores, execution timelines,
-      policy editor, and report generation. Built with React + FastAPI.
+      实现 Web 看板，展示 Agent 列表、合规评分、执行时间线、
+      策略编辑器与报告生成。基于 React + FastAPI 构建。
 
     spec_checkpoint: |
-      Completes CAP-5 (Web UI interface)
-      Completes CAP-6 (Compliance report generation)
-      Enables security team visualization and policy management
+      完成 CAP-5（Web UI 界面）
+      完成 CAP-6（合规报告生成）
+      支持安全团队的可视化与策略管理
 
     done_checkpoint: |
-      ✅ Web dashboard: Agent list with compliance scores, trends
-      ✅ Agent detail view: execution timeline, failed probes, recommendations
-      ✅ Policy editor: YAML editor with real-time validation
-      ✅ Report generator: PDF, JSON, HTML export
-      ✅ Authentication (optional for MVP): local user or OAuth
-      ✅ Responsive design (desktop + mobile)
-      ✅ E2E tests: critical user journeys
+      ✅ Web 看板：带合规评分与趋势的 Agent 列表
+      ✅ Agent 详情页：执行时间线、失败探针、建议
+      ✅ 策略编辑器：带实时校验的 YAML 编辑器
+      ✅ 报告生成器：PDF、JSON、HTML 导出
+      ✅ 认证（MVP 可选）：本地用户或 OAuth
+      ✅ 响应式设计（桌面 + 移动端）
+      ✅ E2E 测试：覆盖关键用户旅程
 
     invoke_dev_with: |
-      - Frontend: React + TypeScript, TailwindCSS for styling
-      - Backend: FastAPI endpoints for Agent data, policy management, report generation
-      - Implement Dashboard page (Agent list, compliance scores)
-      - Implement Agent detail page (timeline, violations, recommendations)
-      - Implement Policy editor (YAML + real-time validation)
-      - Implement Report center (PDF/JSON/HTML export)
-      - E2E tests using Playwright
+      - 前端：React + TypeScript，样式用 TailwindCSS
+      - 后端：FastAPI 端点，负责 Agent 数据、策略管理、报告生成
+      - 实现看板页（Agent 列表、合规评分）
+      - 实现 Agent 详情页（时间线、违规、建议）
+      - 实现策略编辑器（YAML + 实时校验）
+      - 实现报告中心（PDF/JSON/HTML 导出）
+      - 使用 Playwright 编写 E2E 测试
 
-    user_story: "As a security team lead, I want a dashboard showing all Agents and their compliance status, so I can quickly identify policy violations and manage Agent policies."
+    user_story: "作为安全团队负责人，我希望有一个展示所有 Agent 及其合规状态的看板，以便快速定位策略违规并管理 Agent 策略。"
 
     acceptance_criteria:
-      - Dashboard displays Agent list with compliance scores
-      - Agent detail page shows execution timeline and violations
-      - Policy editor is functional and validates input
-      - Reports can be generated and downloaded
-      - UI is responsive and accessible
-      - Key user journeys are tested
+      - 看板展示带合规评分的 Agent 列表
+      - Agent 详情页展示执行时间线与违规项
+      - 策略编辑器可用并对输入进行校验
+      - 报告可生成并下载
+      - UI 具备响应式与无障碍支持
+      - 关键用户旅程经过测试
 
     estimate_days: 3
     assignee: frontend-team + backend-team
     priority: high
 
   - id: story-8
-    title: "E2E Demo & Documentation"
-    epic: "Week 3: Demo & Delivery"
+    title: "E2E 演示与文档"
+    epic: "第 3 周：演示与交付"
 
     description: |
-      Create end-to-end demo using GitHub incident scenario (from brainstorm).
-      Package MVP, documentation, and demo scripts for delivery.
+      基于头脑风暴中的 GitHub 事件场景创建端到端演示。
+      打包 MVP、文档与演示脚本用于交付。
 
     spec_checkpoint: |
-      Demonstrates all 7 capabilities working together
-      Validates MVP readiness for handoff
+      演示 7 项 capability 协同工作
+      验证 MVP 达到交付就绪状态
 
     done_checkpoint: |
-      ✅ Demo script: HuggingFace-inspired scenario (Agent with undeclared tool)
-      ✅ Demo runs: static discovery → policy gen → probe execution → FAIL verdict
-      ✅ User documentation: quick start, CLI usage, web UI walkthrough
-      ✅ Developer documentation: architecture, API design, extension points
-      ✅ Deployment guide: local dev, Docker, Kubernetes (optional)
-      ✅ GitHub README: project description, quick start, examples
-      ✅ Demo recorded (video walkthrough optional)
+      ✅ 演示脚本：HuggingFace 事件启发的场景（带未声明工具的 Agent）
+      ✅ 演示流程：静态发现 → 策略生成 → 探针执行 → FAIL 判定
+      ✅ 用户文档：快速上手、CLI 用法、Web UI 走查
+      ✅ 开发者文档：架构、API 设计、扩展点
+      ✅ 部署指南：本地开发、Docker、Kubernetes（可选）
+      ✅ GitHub README：项目介绍、快速上手、示例
+      ✅ 演示已录制（视频走查可选）
 
     invoke_dev_with: |
-      - Create self-contained demo: sample Agent + policy + expected results
-      - Document demo scenario step-by-step
-      - Write user docs: quick start, example policies, troubleshooting
-      - Write developer docs: architecture, how to extend, contribution guidelines
-      - Record demo video or create interactive walkthrough
-      - Package all materials in /docs directory
+      - 制作自包含演示：示例 Agent + 策略 + 预期结果
+      - 按步骤记录演示场景
+      - 编写用户文档：快速上手、策略示例、故障排查
+      - 编写开发者文档：架构、如何扩展、贡献指南
+      - 录制演示视频或制作交互式走查
+      - 将全部材料打包到 /docs 目录
 
-    user_story: "As a project lead, I want a complete end-to-end demo and clear documentation so stakeholders understand what APCV does and how to use it."
+    user_story: "作为项目负责人，我希望有完整的端到端演示和清晰的文档，让干系人理解 APCV 做什么、如何使用。"
 
     acceptance_criteria:
-      - Demo runs successfully from start to finish
-      - Documentation covers user and developer workflows
-      - README is clear and includes quick start
-      - Example policies are provided
-      - All materials are ready for public sharing
+      - 演示从头到尾成功运行
+      - 文档覆盖用户与开发者工作流
+      - README 清晰并包含快速上手
+      - 提供示例策略
+      - 全部材料达到可公开发布状态
 
     estimate_days: 2
     assignee: tech-writer + backend-team
     priority: high
 
----
+# ---------------------------------------------------------------------------
+# 以下为供人类阅读的 Sprint 规划说明（原文 "---" 分隔之后的 Markdown 内容，
+# 为保持整个文件可作为单一 YAML 文档解析，收纳进块标量，内容未删减）。
+# ---------------------------------------------------------------------------
+project_plan: |
+  ## 故事映射与 Sprint 分配
 
-## Story Mapping & Sprint Allocation
+  ### 第 1 周（第 1-5 天）
+  - **story-1**（工具发现）：第 1-3 天
+  - **story-2**（Policy DSL）：第 2-4 天
+  - **story-3**（Probe 规则）：第 3-5 天
 
-### Week 1 (Days 1-5)
-- **story-1** (Tool Discovery): Days 1-3
-- **story-2** (Policy DSL): Days 2-4
-- **story-3** (Probe Rules): Days 3-5
+  **交付物**：Tool SBOM + Policy DSL + Probe 规则库（核心引擎主干）
 
-**Deliverable**: Tool SBOM + Policy DSL + Probe Library (Core engine backbone)
+  ### 第 2 周（第 6-10 天）
+  - **story-3**（续）：第 6 天
+  - **story-4**（隔离执行）：第 6-8 天
+  - **story-5**（一致性与报告）：第 8-10 天
 
-### Week 2 (Days 6-10)
-- **story-3** (cont): Day 6
-- **story-4** (Isolated Execution): Days 6-8
-- **story-5** (Conformance & Reports): Days 8-10
+  **交付物**：完整 CLI 流水线（apcv validate 端到端）
 
-**Deliverable**: Full CLI pipeline (apcv validate end-to-end)
+  ### 第 3 周（第 11-15 天）
+  - **story-6**（CLI 工具）：第 11-12 天
+  - **story-7**（Web UI）：第 11-13 天
+  - **story-8**（演示与文档）：第 14-15 天
 
-### Week 3 (Days 11-15)
-- **story-6** (CLI Tool): Days 11-12
-- **story-7** (Web UI): Days 11-13
-- **story-8** (Demo & Docs): Days 14-15
+  **交付物**：MVP 完成（CLI + Web UI + 演示 + 文档）
 
-**Deliverable**: MVP complete (CLI + Web UI + Demo + Docs)
+  ## 依赖与顺序
 
----
+  ```
+  story-1（工具发现）
+    ↓
+  story-2（Policy DSL）──────┐
+    ↓                        ▼
+  story-3（Probe 规则）◄── 策略输入
+    ↓
+  story-4（隔离执行）◄── 来自 story-3 的探针
+    ↓
+  story-5（一致性检查）◄── 来自 story-4 的执行轨迹
+    ↓
+  story-6（CLI 工具）────┐
+    ├─────────────────────┤
+  story-7（Web UI）──────┤（并行，均消费 story-5 的结果）
+    ├─────────────────────┤
+  story-8（演示与文档）◄─┘（依赖以上全部完成）
+  ```
 
-## Dependencies & Ordering
+  **关键路径**：story-1 → story-2 → story-3 → story-4 → story-5（10 天）
+  **并行轨道**：story-6 + story-7（3 天，在 story-5 之后启动）
+  **收尾**：story-8（2 天）
+  **总计**：约 15 天（含缓冲共 3 周）
 
-```
-story-1 (Tool Discovery)
-  ↓
-story-2 (Policy DSL) ──────┐
-  ↓                        ▼
-story-3 (Probe Rules) ◄── policy input
-  ↓
-story-4 (Isolated Execution) ◄── probes from story-3
-  ↓
-story-5 (Conformance Check) ◄── execution traces from story-4
-  ↓
-story-6 (CLI Tool) ────┐
-  ├─────────────────────┤
-story-7 (Web UI) ──────┤ (parallel, both consume story-5 results)
-  ├─────────────────────┤
-story-8 (Demo & Docs) ◄─┘ (depends on all above being complete)
-```
+  ## 风险与调整
 
-**Critical Path**: story-1 → story-2 → story-3 → story-4 → story-5 (10 days)
-**Parallel Track**: story-6 + story-7 (3 days, starts after story-5)
-**Final**: story-8 (2 days)
-**Total**: ~15 days (3 weeks with buffer)
-
----
-
-## Risk & Adjustments
-
-If slippage occurs:
-- **Minimum MVP**: story-1 + story-2 + story-3 + story-4 + story-5 + story-6 (CLI only, no Web UI)
-- **Drop if needed**: Web UI (story-7) can slip to Sprint 2; CLI is essential for CI/CD adoption
-- **Keep if possible**: Demo (story-8) is critical for validation and handoff
+  若出现延期：
+  - **最小 MVP**：story-1 + story-2 + story-3 + story-4 + story-5 + story-6（仅 CLI，不含 Web UI）
+  - **必要时可舍弃**：Web UI（story-7）可延至 Sprint 2；CLI 对 CI/CD 落地至关重要
+  - **尽可能保留**：演示（story-8）对验证与交付至关重要

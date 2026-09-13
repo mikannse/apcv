@@ -431,9 +431,9 @@ Deploy to Production
 
 | 传统 | Agent | 本项目 |
 |-----|------|------|
-| SAST | Static Tool Scanning | Scanner 模块 |
-| DAST | Dynamic Probe Testing | Probe Generator |
-| Policy Engine | Policy Validator | OPA/Rego 层 |
+| SAST | 静态工具扫描 | Scanner 模块 |
+| DAST | 动态探针测试 | Probe Generator |
+| Policy Engine | 策略校验器 | OPA/Rego 层 |
 
 ---
 

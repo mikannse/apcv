@@ -10,102 +10,102 @@ sources:
   - ../../../brainstorming/brainstorm-ai-agent-containment-2026-09-12/brainstorm-summary.md
   - ../../../research-outputs/PROJECT-PLAN-FINAL-2026-09-12.md
 assumptions:
-  - LangGraph tool surface is statically parseable via AST decorators with >95% accuracy
-  - Parameter-level tracing suffices for MVP conformance verification
-  - Declared policy (YAML) is developer responsibility; no auto-inference from IAM/IaC in MVP
-  - Docker is available in deployment environments
-  - Compliance scope focuses on audit trail + deterministic verification, not behavioral guarantees
+  - LangGraph 工具面可通过 AST 装饰器静态解析，准确率 >95%
+  - 参数级追踪足以支撑 MVP 的一致性验证
+  - 声明策略（YAML）由开发者负责；MVP 不做基于 IAM/IaC 的自动推断
+  - 部署环境中具备 Docker
+  - 合规范围聚焦于审计留痕 + 确定性验证，而非行为层面的保证
 open_questions:
-  - What's the acceptable false-positive rate for Probe tests?
-  - Should Policy DSL use Rego/OPA (industry standard, steep learning curve) or custom YAML (simpler)?
-  - How to prevent execution cross-pollution in multi-tenant SaaS deployment?
+  - Probe 测试可接受的误报率是多少？
+  - Policy DSL 应采用 Rego/OPA（业界标准，学习曲线陡峭）还是自定义 YAML（更简单）？
+  - 在多租户 SaaS 部署中如何防止执行层面的交叉污染？
 ---
 
 # Agent Policy Conformance Validator (APCV)
 
-## Why
+## 为什么（Why）
 
-Enterprises deploying AI Agents apply permission restrictions and isolation policies, then assume "the Agent is restricted." But they cannot answer: **Are these restrictions actually enforced? Is there a gap between declared policy and actual capability?**
+部署 AI Agent 的企业通常会配置权限限制与隔离策略，然后默认"Agent 已被限制"。但他们无法回答：**这些限制真的被强制执行了吗？声明策略与实际能力之间是否存在差距？**
 
-This confidence gap blocks production deployment. HuggingFace incident and industry data (65% of enterprises experienced Agent security incidents in 2026) confirm the problem is real: declared resource access ranges often diverge from actual access ability.
+这一信心缺口阻碍了生产部署。HuggingFace 事件与行业数据（2026 年 65% 的企业遭遇过 Agent 安全事件）证实该问题真实存在：声明的资源访问范围往往与实际访问能力不一致。
 
-**Market position**: No specialized "Agent conformance validator" exists. Competitors (Microsoft Agent Governance Toolkit, Snyk, SIEM) are too broad or don't handle Agent-specific dynamic capabilities. EU AI Act (effective 2026) creates legal compliance pressure. DevOps teams need a pre-deployment CI/CD gate, not runtime enforcement.
+**市场定位**：目前尚不存在专门的"Agent 一致性验证器"。竞品（Microsoft Agent Governance Toolkit、Snyk、SIEM）要么覆盖面过宽，要么无法处理 Agent 特有的动态能力。EU AI Act（2026 年生效）带来法务合规压力。DevOps 团队需要的是部署前的 CI/CD 门禁，而非运行时强制。
 
-## Capabilities
+## 能力（Capabilities）
 
-### CAP-1: Tool Surface Discovery (4-Layer)
-**Intent**: Discover the complete tool surface available to an Agent across all layers.  
-**Success**: Identify ≥99% of tools (MCP-defined, framework-defined, runtime built-in, sub-agent inherited) with accuracy >95% on LangGraph; processing time <10s.
+### CAP-1: 工具面发现（四层）
+**意图（Intent）**: 跨所有层发现 Agent 可用的完整工具面。  
+**成功标准（Success）**: 识别 ≥99% 的工具（MCP 定义、框架定义、运行时内建、子 Agent 继承），在 LangGraph 上准确率 >95%；处理时间 <10s。
 
-### CAP-2: Policy-Relative Probe Generation
-**Intent**: Automatically generate boundary-crossing test cases tailored to the Agent's declared policy, not a fixed resource list.  
-**Success**: For any policy, generate ≥15 probes that test the policy's explicit edges (e.g., if policy says "only access /data", probe tests access to /etc, /home, /var); each probe has clear PASS/FAIL semantics.
+### CAP-2: 策略相对型 Probe 生成
+**意图（Intent）**: 针对声明的策略自动生成越界测试用例，而非基于固定资源清单。  
+**成功标准（Success）**: 对任意策略，生成 ≥15 个检验策略显式边界的探针（例如策略声明"仅访问 /data"，则探针测试对 /etc、/home、/var 的访问）；每个探针具有明确的 PASS/FAIL 语义。
 
-### CAP-3: Isolated Probe Execution & Parameter Tracing
-**Intent**: Execute probes in a sandboxed environment and record every tool invocation with parameters.  
-**Success**: Run 20–30 probes in <2 min total; record 100% of tool calls; parameter tracing overhead <1%; Docker-isolated (read-only FS, no network, <30s timeout per probe).
+### CAP-3: 隔离的 Probe 执行与参数追踪
+**意图（Intent）**: 在沙箱环境中执行探针，并记录每一次带参数的工具调用。  
+**成功标准（Success）**: 2 分钟内完成 20–30 个探针；记录 100% 的工具调用；参数追踪开销 <1%；Docker 隔离（只读文件系统、禁用网络、每个探针 <30s 超时）。
 
-### CAP-4: Conformance Check & Diff Report
-**Intent**: Compare execution trace against declared policy; produce auditable PASS/FAIL verdict and violation details.  
-**Success**: Output machine-readable diff (JSON), human-readable report (Markdown), and compliance_score (0–100); every violation includes tool name, parameters, severity, remediation hint.
+### CAP-4: 一致性检查与差异报告
+**意图（Intent）**: 将执行轨迹与声明策略比对，输出可审计的 PASS/FAIL 判定与违规详情。  
+**成功标准（Success）**: 输出机器可读的差异（JSON）、人读报告（Markdown）以及 compliance_score（0–100）；每条违规都包含工具名、参数、严重级别、修复提示。
 
-### CAP-5: CLI & Web UI Dual Interface
-**Intent**: Serve DevOps (CLI for CI/CD automation) and security teams (Web UI for policy mgmt + visualization).  
-**Success**: `apcv validate --agent <path> --policy <yaml>` works in CI/CD pipelines; Web dashboard shows Agent list, compliance scores, execution timeline, policy editor; both accept/output JSON for integration.
+### CAP-5: CLI 与 Web UI 双入口
+**意图（Intent）**: 同时服务 DevOps（CLI 用于 CI/CD 自动化）与安全团队（Web UI 用于策略管理与可视化）。  
+**成功标准（Success）**: `apcv validate --agent <path> --policy <yaml>` 可在 CI/CD 流水线中运行；Web 看板展示 Agent 列表、合规评分、执行时间线、策略编辑器；两者均支持 JSON 输入输出以便集成。
 
-### CAP-6: Regulatory-Grade Compliance Reports
-**Intent**: Generate evidence-ready reports suitable for GDPR/SOX/ISO27001 audits.  
-**Success**: PDF + JSON exports include execution trace, all probe results, policy declarations, timestamps, signatures (for chain-of-custody); can prove "Agent was tested against declared policy on date X with result Y."
+### CAP-6: 监管级合规报告
+**意图（Intent）**: 生成可直接作为证据的报告，适配 GDPR/SOX/ISO27001 审计。  
+**成功标准（Success）**: PDF + JSON 导出包含执行轨迹、全部探针结果、策略声明、时间戳、签名（用于证据链保全）；能够证明"Agent 于某日针对某策略接受了测试，结果为 Y"。
 
-### CAP-7: LangGraph End-to-End Support
-**Intent**: Full lifecycle support for LangGraph Agents (discovery, probe gen, execution, reporting).  
-**Success**: Discover all @tool decorators and runtime capabilities; generate policy-relative probes; execute and trace; produce verdict in <2 min E2E; no manual code patching required.
+### CAP-7: LangGraph 端到端支持
+**意图（Intent）**: 为 LangGraph Agent 提供全生命周期支持（发现、探针生成、执行、报告）。  
+**成功标准（Success）**: 发现所有 @tool 装饰器与运行时能力；生成策略相对型探针；执行并追踪；端到端 2 分钟内给出判定；无需人工修改代码。
 
-## Constraints
+## 约束（Constraints）
 
-### Design Constraints
+### 设计约束
 
-**Four-Layer Tool Fragmentation**: Agent capabilities scatter across MCP manifests (most visible), framework code (@tool decorators), runtime implicit tooling, and sub-agent delegation. Unified Tool SBOM is the single source of truth; any layer omission = false confidence in policy verification.
+**四层工具碎片化**：Agent 能力分散于 MCP manifest（最易见）、框架代码（@tool 装饰器）、运行时隐式工具、子 Agent 委派之中。统一的 Tool SBOM 是唯一可信来源；遗漏任何一层都意味着策略验证的虚假信心。
 
-**Policy-Relative Generation, Not Fixed Heuristics**: Probe content must vary by declared policy (agent declaring "only read_file" gets different probes than one declaring "full filesystem"). Determinism over adaptability: use parameter-level tracing (wrapt instrumentation), not LLM-driven probes.
+**策略相对型生成，而非固定启发式**：探针内容必须随声明策略而变化（声明"仅 read_file"的 agent 与声明"完整文件系统访问"的 agent 会得到不同的探针）。确定性优先于适应性：使用参数级追踪（wrapt 插桩），而非 LLM 驱动的探针。
 
-**Deterministic Verification for Audit**: Compliance evidence must be reproducible and non-subjective. Parameter traces (what was called + what arguments) are facts; behavioral interpretation is not. Traces recorded by standard library, not custom side-effect monitors.
+**面向审计的确定性验证**：合规证据必须可复现且非主观。参数轨迹（调用了什么 + 传入了什么参数）是事实；行为解读不是。轨迹由标准库记录，而非自定义的副作用监控器。
 
-**Isolated Execution, Zero Cross-Pollution**: Each Probe runs in a clean Docker container; no state leakage between tests; consistent environment ensures traces are comparable.
+**隔离执行，零交叉污染**：每个 Probe 在干净的 Docker 容器中运行；测试之间无状态泄漏；环境一致保证轨迹可比较。
 
-### Implementation Constraints
+### 实现约束
 
-**MVP: LangGraph Only**: Framework support limited to LangGraph in 3-week sprint. Architecture must be framework-agnostic (adapter pattern) to permit AgentScope, AutoGen, etc. in later sprints without redesign.
+**MVP 仅支持 LangGraph**：3 周迭代内框架支持仅限 LangGraph。架构必须框架无关（适配器模式），以便后续迭代支持 AgentScope、AutoGen 等，无需重新设计。
 
-**Probe Library: Hardcoded Rules (MVP)**: 20–30 hardcoded probes covering filesystem access, tool invocation, privilege escalation, network categories. LLM-assisted probe generation deferred to "Could Have" (post-MVP).
+**Probe 规则库：硬编码规则（MVP）**：20–30 条硬编码探针，覆盖文件系统访问、工具调用、权限提升、网络访问等类别。LLM 辅助的探针生成推迟为"Could Have"（MVP 之后）。
 
-**Developer-Declared Policy**: Developers write Declared Policy as YAML; no auto-inference from IAM/IaC in MVP. This matches DevSecOps convention (container security policies are human-authored) and avoids false IAM-to-Agent mappings.
+**开发者声明策略**：开发者以 YAML 编写声明策略；MVP 不做基于 IAM/IaC 的自动推断。这符合 DevSecOps 惯例（容器安全策略由人工编写），并避免错误的 IAM-to-Agent 映射。
 
-**Performance Target**: Complete validation <2 min (tool discovery + probe generation + execution + reporting). Latency budget: static scan 10s, probe gen 5s, execution 60s, reporting 5s.
+**性能目标**：完整验证 <2 分钟（工具发现 + 探针生成 + 执行 + 报告）。延迟预算：静态扫描 10s、探针生成 5s、执行 60s、报告 5s。
 
-## Non-Goals
+## 非目标（Non-Goals）
 
-- **Runtime enforcement**: APCV validates; deployment platform enforces. Out of scope.
-- **Prompt injection detection**: Separate security layer; not a Probe concern.
-- **Adversarial Agent deep audit**: LLM-based multi-turn probing is non-deterministic. Marked "Could Have" for later. MVP uses deterministic parameter-level tests only.
-- **Multi-framework MVP**: LangGraph only; others in Sprint 2+.
-- **IAM/IaC auto-inference**: Policy declaration is human responsibility (MVP). Reverse IAM-to-policy mapping is a "Could Have" future direction.
-- **Sandbox side-effect tracking**: Filesystem writes, network connections beyond parameter tracing are not captured. Parameter calls are sufficient for policy conformance.
+- **运行时强制**：APCV 负责验证；部署平台负责强制。超出范围。
+- **提示词注入检测**：属于独立的安全层；不是 Probe 的职责。
+- **对抗式 Agent 深度审计**：基于 LLM 的多轮探测是非确定性的。标记为"Could Have"留待后续。MVP 仅使用确定性参数级测试。
+- **多框架 MVP**：仅 LangGraph；其余在 Sprint 2+。
+- **IAM/IaC 自动推断**：策略声明由人工负责（MVP）。IAM 反向映射到策略是"Could Have"的未来方向。
+- **沙箱副作用追踪**：文件系统写入、网络连接等超出参数追踪范围的内容不会被捕获。参数调用已足以判定策略一致性。
 
-## Success Signal
+## 成功信号（Success Signal）
 
-**Technical**: Tool discovery accuracy >95%; Probe execution <2 min; tracing overhead <1%; Docker isolation with zero cross-test contamination; compliance_score aligns with manual audit verdicts.
+**技术层面**：工具发现准确率 >95%；Probe 执行 <2 分钟；追踪开销 <1%；Docker 隔离且测试间零污染；compliance_score 与人工审计结论一致。
 
-**Product**: DevOps runs `apcv validate` in CI/CD pre-merge; receives PASS/FAIL + auditable diff in <2 min; can confidently promote Agent to production OR identify capability gaps for remediation without manual security review.
+**产品层面**：DevOps 在 CI/CD 合并前运行 `apcv validate`；2 分钟内获得 PASS/FAIL + 可审计差异；从而有信心将 Agent 推进到生产环境，或识别出需修复的能力缺口，无需额外的人工安全评审。
 
-**Market**: Zero existing competitive products in this niche; enterprise DevOps teams adopt within 4 weeks (low onboarding friction); positive signals from 3+ pilot customers (internal + external); EU AI Act compliance pathway clear.
+**市场层面**：该细分领域零竞品；企业 DevOps 团队 4 周内即可采用（落地阻力低）；来自 3+ 家试点客户（内部 + 外部）的积极信号；EU AI Act 合规路径清晰。
 
-**Regulatory**: Generated reports pass compliance review (auditors accept parameter traces as evidence); chain-of-custody (who ran what test when) is preserved and machine-verifiable.
+**监管层面**：生成的报告通过合规评审（审计师接受参数轨迹作为证据）；证据链（谁在何时运行了什么测试）得以保全且机器可验证。
 
 ---
 
-## Next Steps
+## 后续步骤（Next Steps）
 
-1. **Validate Companions**: Create `probe-rules.md` (20–30 rule catalog), `policy-dsl-schema.md` (YAML spec), `architecture-diagrams.md` (system diagrams).
-2. **Story Breakdown**: Decompose MVP into 6–8 independently shippable stories (Week 1: discovery + policy DSL; Week 2: probe gen + execution; Week 3: CLI + UI).
-3. **Begin Sprint 1**: Framework scaffolding, AST parser PoC for LangGraph @tool extraction.
+1. **验证配套文件**：创建 `probe-rules.md`（20–30 条规则目录）、`policy-dsl-schema.md`（YAML 规格）、`architecture-diagrams.md`（系统图）。
+2. **故事拆分**：将 MVP 分解为 6–8 个可独立交付的故事（第 1 周：发现 + policy DSL；第 2 周：探针生成 + 执行；第 3 周：CLI + UI）。
+3. **启动 Sprint 1**：框架脚手架、LangGraph @tool 抽取的 AST 解析器 PoC。

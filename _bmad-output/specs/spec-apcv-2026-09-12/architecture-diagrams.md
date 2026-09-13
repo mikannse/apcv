@@ -1,106 +1,106 @@
-# Architecture Diagrams
+# 架构图
 
-## System Architecture (High-Level)
+## 系统架构（高层）
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Application Layer                         │
+│                             应用层                              │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  CLI Tool              Web UI (React/FastAPI)                    │
+│  CLI 工具              Web UI (React/FastAPI)                    │
 │  ┌──────────────────┐  ┌──────────────────────────────────────┐ │
-│  │ apcv validate    │  │ Dashboard                            │ │
-│  │ --agent X        │  │ ├─ Agent List (compliance scores)   │ │
-│  │ --policy Y       │  │ ├─ Policy Editor (YAML)             │ │
-│  │ --output json    │  │ ├─ Execution Timeline               │ │
-│  └──────────────────┘  │ └─ Report Generator (PDF/JSON)      │ │
-│  Output: JSON, SARIF   └──────────────────────────────────────┘ │
+│  │ apcv validate    │  │ 看板                                 │ │
+│  │ --agent X        │  │ ├─ Agent 列表（合规评分）            │ │
+│  │ --policy Y       │  │ ├─ 策略编辑器（YAML）                │ │
+│  │ --output json    │  │ ├─ 执行时间线                        │ │
+│  └──────────────────┘  │ └─ 报告生成器（PDF/JSON）            │ │
+│  输出：JSON、SARIF     └──────────────────────────────────────┘ │
 │                                                                   │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Core Engine Layer                             │
+│                           核心引擎层                            │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  Tool Discovery       Probe Generation    Execution Engine      │
+│  工具发现             探针生成              执行引擎            │
 │  ┌────────────────┐  ┌────────────────┐  ┌──────────────────┐  │
-│  │ AST Parser     │  │ Rule Library   │  │ Docker Runner    │  │
-│  │ Runtime        │  │ (20-30 rules)  │  │ Parameter Tracer │  │
-│  │ Interceptor    │  │ Policy-Relative│  │ (wrapt wrapper)  │  │
-│  │                │  │ Generation     │  │                  │  │
+│  │ AST 解析器     │  │ 规则库         │  │ Docker Runner    │  │
+│  │ 运行时         │  │ (20-30 条规则) │  │ 参数追踪器       │  │
+│  │ 拦截器         │  │ 策略相对型     │  │ (wrapt 包装器)   │  │
+│  │                │  │ 生成           │  │                  │  │
 │  └────────────────┘  └────────────────┘  └──────────────────┘  │
 │                                                                   │
-│  Conformance Checker    Policy Validator                         │
+│  一致性检查器           策略校验器                               │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │ Compare SBOM vs Execution Trace                           │ │
-│  │ Generate Diff (violations + severity)                     │ │
-│  │ Apply Policy Rules → PASS/FAIL Decision                   │ │
+│  │ 比对 SBOM 与执行轨迹                                      │ │
+│  │ 生成差异（违规项 + 严重级别）                             │ │
+│  │ 应用策略规则 → PASS/FAIL 判定                             │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │                                                                   │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                  Adapter & Framework Layer                       │
+│                         适配器与框架层                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  Framework-Agnostic Interface                                    │
+│  框架无关接口                                                    │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ ToolRegistry    ToolInterceptor    ParameterTracer      │  │
 │  │ IsolatedExecutor    FrameworkAdapter                     │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
-│  LangGraph Adapter (MVP)    AgentScope Adapter (Sprint 2)       │
-│  AutoGen Adapter (Sprint 3) ...                                  │
+│  LangGraph 适配器 (MVP)    AgentScope 适配器 (Sprint 2)          │
+│  AutoGen 适配器 (Sprint 3) ...                                   │
 │                                                                   │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Framework Layer                               │
+│                            框架层                               │
 ├─────────────────────────────────────────────────────────────────┤
-│ LangGraph │ AgentScope │ AutoGen │ Custom Agents                │
+│ LangGraph │ AgentScope │ AutoGen │ 自定义 Agent                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Data Flow: Complete Validation Cycle
+## 数据流：完整验证周期
 
 ```
 ┌──────────────────┐
-│  Agent Code      │
-│  + Policy YAML   │
+│  Agent 代码      │
+│  + 策略 YAML     │
 └────────┬─────────┘
          │
          ▼
     ┌────────────────────────────────────┐
-    │  PHASE 1: Static Discovery         │
+    │  阶段 1：静态发现                  │
     │  ┌──────────────────────────────┐  │
-    │  │ 1. Parse Agent code (AST)    │  │
-    │  │ 2. Extract @tool decorators  │  │
-    │  │ 3. Find runtime capabilities │  │
-    │  │ 4. Detect sub-agents         │  │
+    │  │ 1. 解析 Agent 代码（AST）    │  │
+    │  │ 2. 抽取 @tool 装饰器         │  │
+    │  │ 3. 发现运行时能力            │  │
+    │  │ 4. 检测子 Agent              │  │
     │  └──────────────────────────────┘  │
     │           ↓                         │
-    │  Tool SBOM (JSON)                   │
+    │  Tool SBOM（JSON）                  │
     │  ├─ tool_name, signature            │
-    │  ├─ source (code/runtime/mcp)       │
-    │  └─ parameters (name, type)         │
+    │  ├─ source（code/runtime/mcp）      │
+    │  └─ parameters（name, type）        │
     └────────┬─────────────────────────────┘
              │
              ▼
     ┌────────────────────────────────────┐
-    │  PHASE 2: Probe Generation         │
+    │  阶段 2：探针生成                  │
     │  ┌──────────────────────────────┐  │
-    │  │ 1. Load Declared Policy      │  │
-    │  │ 2. Select relevant rules     │  │
-    │  │ 3. Generate policy-relative  │  │
-    │  │    boundary-crossing tests   │  │
+    │  │ 1. 加载声明策略              │  │
+    │  │ 2. 选择相关规则              │  │
+    │  │ 3. 生成策略相对型            │  │
+    │  │    越界测试用例              │  │
     │  └──────────────────────────────┘  │
     │           ↓                         │
-    │  Probe Suite (20-30 tests)          │
+    │  探针套件（20-30 个测试）           │
     │  ├─ probe_fs_1, probe_fs_2, ...     │
     │  ├─ probe_tool_1, probe_tool_2, ... │
     │  └─ probe_priv_1, ...               │
@@ -108,123 +108,123 @@
              │
              ▼
     ┌────────────────────────────────────┐
-    │  PHASE 3: Dynamic Execution        │
-    │  (Docker Container Isolation)      │
+    │  阶段 3：动态执行                  │
+    │  （Docker 容器隔离）               │
     │  ┌──────────────────────────────┐  │
-    │  │ For each probe:              │  │
-    │  │  1. Spawn Docker container   │  │
-    │  │  2. Inject wrapt tracer      │  │
-    │  │  3. Run probe (tool call)    │  │
-    │  │  4. Capture execution trace  │  │
-    │  │  5. Clean up container       │  │
+    │  │ 对每个探针：                 │  │
+    │  │  1. 启动 Docker 容器         │  │
+    │  │  2. 注入 wrapt 追踪器        │  │
+    │  │  3. 运行探针（工具调用）     │  │
+    │  │  4. 捕获执行轨迹             │  │
+    │  │  5. 清理容器                 │  │
     │  └──────────────────────────────┘  │
     │           ↓                         │
-    │  Execution Trace (JSONL)            │
+    │  执行轨迹（JSONL）                  │
     │  ├─ timestamp                       │
     │  ├─ probe_id                        │
     │  ├─ tool_called                     │
-    │  ├─ args (parameters)               │
-    │  ├─ result (success/error)          │
-    │  └─ policy_violation (Y/N)          │
+    │  ├─ args（参数）                    │
+    │  ├─ result（success/error）         │
+    │  └─ policy_violation（Y/N）         │
     └────────┬─────────────────────────────┘
              │
              ▼
     ┌────────────────────────────────────┐
-    │  PHASE 4: Conformance Check        │
+    │  阶段 4：一致性检查                │
     │  ┌──────────────────────────────┐  │
-    │  │ 1. Compare SBOM vs Trace     │  │
-    │  │ 2. Find undeclared tools     │  │
-    │  │ 3. Check parameter ranges    │  │
-    │  │ 4. Apply policy rules        │  │
+    │  │ 1. 比对 SBOM 与轨迹          │  │
+    │  │ 2. 找出未声明工具            │  │
+    │  │ 3. 检查参数范围              │  │
+    │  │ 4. 应用策略规则              │  │
     │  └──────────────────────────────┘  │
     │           ↓                         │
-    │  Violations & Diff Report           │
-    │  ├─ tool, severity, reason          │
-    │  ├─ parameter violations            │
-    │  ├─ hidden capabilities             │
+    │  违规项与差异报告                   │
+    │  ├─ tool、severity、reason          │
+    │  ├─ 参数违规                        │
+    │  ├─ 隐藏能力                        │
     │  └─ compliance_score (0-100)        │
     └────────┬─────────────────────────────┘
              │
              ▼
     ┌────────────────────────────────────┐
-    │  PHASE 5: Policy Validation        │
+    │  阶段 5：策略校验                  │
     │  ┌──────────────────────────────┐  │
-    │  │ Apply severity rules:        │  │
-    │  │ - critical violation → FAIL  │  │
+    │  │ 应用严重级别规则：           │  │
+    │  │ - critical 违规 → FAIL       │  │
     │  │ - warning → WARN             │  │
-    │  │ - info → PASS (if no critical)│ │
+    │  │ - info → PASS（无 critical） │  │
     │  └──────────────────────────────┘  │
     │           ↓                         │
-    │  VERDICT: PASS | FAIL | WARN        │
-    │  + Detailed Report (JSON/PDF/HTML) │
+    │  VERDICT（判定）：PASS | FAIL | WARN│
+    │  + 详细报告（JSON/PDF/HTML）       │
     └────────┬─────────────────────────────┘
              │
              ▼
     ┌──────────────────────────┐
-    │  Output & Deployment Gate│
-    │  ├─ CI/CD: exit 0 or 1   │
-    │  ├─ Report: PDF/JSON/HTML│
-    │  ├─ Audit Log: traceable │
-    │  └─ Dashboard: updated   │
+    │  输出与部署门禁          │
+    │  ├─ CI/CD: exit 0 或 1   │
+    │  ├─ 报告：PDF/JSON/HTML  │
+    │  ├─ 审计日志：可追溯     │
+    │  └─ 看板：已更新         │
     └──────────────────────────┘
 ```
 
 ---
 
-## Four-Layer Tool Discovery Model
+## 四层工具发现模型
 
 ```
-Agent Codebase
+Agent 代码库
   │
-  ├─ Layer 1: MCP Tools
-  │  ├─ Load MCP Server manifest.json
-  │  ├─ Parse declared tools
-  │  └─ Extract tool signatures
+  ├─ Layer 1: MCP 工具
+  │  ├─ 读取 MCP Server 的 manifest.json
+  │  ├─ 解析声明的工具
+  │  └─ 抽取工具签名
   │
-  ├─ Layer 2: Framework-Defined Tools
-  │  ├─ AST parse: find @tool decorators
-  │  ├─ Extract function signature (args, return type)
-  │  ├─ Find parameter constraints (type hints, docstrings)
-  │  └─ Build ToolRegistry
+  ├─ Layer 2: 框架定义工具
+  │  ├─ AST 解析：查找 @tool 装饰器
+  │  ├─ 抽取函数签名（参数、返回类型）
+  │  ├─ 发现参数约束（类型注解、docstring）
+  │  └─ 构建 ToolRegistry
   │
-  ├─ Layer 3: Runtime Built-in Capabilities
-  │  ├─ Detect framework implicit tools (e.g., code_execute, file_access)
-  │  ├─ Scan for common patterns (os.system, subprocess, etc.)
-  │  ├─ Identify framework-provided utilities
-  │  └─ Add to Tool SBOM (marked as "runtime-implicit")
+  ├─ Layer 3: 运行时内建能力
+  │  ├─ 检测框架隐式工具（如 code_execute、file_access）
+  │  ├─ 扫描常见模式（os.system、subprocess 等）
+  │  ├─ 识别框架提供的工具函数
+  │  └─ 加入 Tool SBOM（标记为 "runtime-implicit"）
   │
-  └─ Layer 4: Sub-Agent Delegation
-     ├─ Find sub-agent instantiation
-     ├─ Recursively apply discovery to sub-agent code
-     ├─ Mark inherited capabilities
-     └─ Track agent hierarchy
+  └─ Layer 4: 子 Agent 委派
+     ├─ 查找子 Agent 实例化
+     ├─ 递归对子 Agent 代码执行发现
+     ├─ 标记继承的能力
+     └─ 追踪 agent 层级
              │
              ▼
         ┌──────────────────┐
-        │  Unified Tool    │
+        │  统一的 Tool     │
         │  SBOM (JSON)     │
-        │  100% complete   │
-        │  capability list │
+        │  100% 完整的     │
+        │  能力清单        │
         └──────────────────┘
 ```
 
 ---
 
-## Parameter Tracing & Wrapt Integration
+## 参数追踪与 Wrapt 集成
 
 ```
-Agent Code
+Agent 代码
   │
-  ├─ Tool Definition
+  ├─ 工具定义
   │  │
   │  def read_file(path: str) → str:
-  │      """Read file contents"""
+  │      """读取文件内容"""
   │      return open(path).read()
   │
   │
-  ├─ Instrumentation Layer (wrapt)
+  ├─ 插桩层（wrapt）
   │  │
-  │  @trace_parameters  ◄─── Decorator injected at runtime
+  │  @trace_parameters  ◄─── 运行时注入的装饰器
   │  def read_file(path: str) → str:
   │      trace_record = {
   │          "timestamp": now,
@@ -239,9 +239,9 @@ Agent Code
   │          TRACE_LOG.append(trace_record)
   │
   │
-  └─ Execution in Docker Container
+  └─ 在 Docker 容器中执行
      │
-     Trace Output (JSONL)
+     轨迹输出（JSONL）
      {
        "timestamp": "2026-09-12T10:00:01.234Z",
        "tool": "read_file",
@@ -250,64 +250,64 @@ Agent Code
        "policy_violation": true,
        "violation_reason": "path not in allowed_paths"
      }
-     
-     Traces are collected & matched against Policy
+
+     轨迹被收集，并与策略进行匹配比对
 ```
 
 ---
 
-## Multi-Container Parallel Execution
+## 多容器并行执行
 
 ```
-Probe Suite (20-30 probes)
+探针套件（20-30 个探针）
   │
-  ├─ Probe 1 ────┐
-  ├─ Probe 2 ────┤
-  ├─ Probe 3 ────┼──► ThreadPoolExecutor(max_workers=4)
-  ├─ Probe 4 ────│
+  ├─ 探针 1 ────┐
+  ├─ 探针 2 ────┤
+  ├─ 探针 3 ────┼──► ThreadPoolExecutor(max_workers=4)
+  ├─ 探针 4 ────│
   └─ ...         │
-     └─ Probe N ─┘
+     └─ 探针 N ─┘
         │
         ▼
    ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
    │  Docker 1        │  │  Docker 2        │  │  Docker 3        │  │  Docker 4        │
    │ (probe_fs_1)     │  │ (probe_fs_2)     │  │ (probe_tool_1)   │  │ (probe_priv_1)   │
    │                  │  │                  │  │                  │  │                  │
-   │ Isolated FS      │  │ Isolated FS      │  │ Isolated FS      │  │ Isolated FS      │
-   │ No network       │  │ No network       │  │ No network       │  │ No network       │
-   │ 30s timeout      │  │ 30s timeout      │  │ 30s timeout      │  │ 30s timeout      │
-   │ Trace recorded   │  │ Trace recorded   │  │ Trace recorded   │  │ Trace recorded   │
+   │ 隔离文件系统     │  │ 隔离文件系统     │  │ 隔离文件系统     │  │ 隔离文件系统     │
+   │ 无网络           │  │ 无网络           │  │ 无网络           │  │ 无网络           │
+   │ 30s 超时         │  │ 30s 超时         │  │ 30s 超时         │  │ 30s 超时         │
+   │ 轨迹已记录       │  │ 轨迹已记录       │  │ 轨迹已记录       │  │ 轨迹已记录       │
    └──────────────────┘  └──────────────────┘  └──────────────────┘  └──────────────────┘
         │                     │                     │                     │
         ▼                     ▼                     ▼                     ▼
-   Trace 1                Trace 2                Trace 3                Trace 4
-   
-   Aggregated Results
-   ├─ All traces collected
-   ├─ Violations summarized
-   ├─ Compliance score calculated
-   └─ Report generated
+   轨迹 1                 轨迹 2                 轨迹 3                 轨迹 4
+
+   聚合结果
+   ├─ 收集全部轨迹
+   ├─ 汇总违规项
+   ├─ 计算合规评分
+   └─ 生成报告
 ```
 
 ---
 
-## CLI to CICD Integration
+## CLI 到 CI/CD 的集成
 
 ```
-Developer's Git Workflow
+开发者的 Git 工作流
   │
   git commit → git push
   │
   ▼
-GitHub Actions (or GitLab CI)
+GitHub Actions（或 GitLab CI）
   │
   stages:
     - test
-    - security  ◄─── APCV runs here
+    - security  ◄─── APCV 在此运行
     - deploy
-  
+
   ┌─────────────────────────────────────┐
-  │ Conformance Check Stage             │
+  │ 一致性检查阶段                      │
   ├─────────────────────────────────────┤
   │                                     │
   │ apcv validate \                     │
@@ -315,69 +315,69 @@ GitHub Actions (or GitLab CI)
   │   --policy ./policy.yaml \          │
   │   --output sarif > results.sarif    │
   │                                     │
-  │ Exit code: 0 (PASS) or 1 (FAIL)     │
+  │ 退出码：0（PASS）或 1（FAIL）       │
   │                                     │
-  │ Post-action: Comment on PR          │
-  │ "✅ Agent conforms to policy"       │
-  │ or                                  │
-  │ "❌ Agent violates policy:          │
-  │  - Undeclared bash tool"            │
+  │ 后置动作：在 PR 上评论              │
+  │ "✅ Agent 符合策略"                 │
+  │ 或                                  │
+  │ "❌ Agent 违反策略：                │
+  │  - 未声明的 bash 工具"              │
   └─────────────────────────────────────┘
          │
          ▼
-    PASS → Proceed to deploy
-    FAIL → Block merge, notify developer
+    PASS → 继续部署
+    FAIL → 阻止合并，通知开发者
 ```
 
 ---
 
-## Compliance Report Output
+## 合规报告输出
 
 ```
-APCV Validation Report
-├─ Metadata
+APCV 验证报告
+├─ 元数据
 │  ├─ Agent: github-assistant
 │  ├─ Policy: github-readonly (v2)
 │  ├─ Timestamp: 2026-09-12T14:30:00Z
 │  └─ Validator: apcv/0.1.0
 │
-├─ Executive Summary
-│  ├─ Verdict: ❌ FAIL
-│  ├─ Compliance Score: 72/100
-│  └─ Critical Violations: 2
+├─ 执行摘要
+│  ├─ 判定: ❌ FAIL
+│  ├─ 合规评分: 72/100
+│  └─ 严重违规: 2
 │
 ├─ Tool SBOM
-│  ├─ Total tools discovered: 15
-│  ├─ Declared in policy: 8
-│  ├─ Undeclared found: 2
-│  └─ Table: [tool_name, source, status]
+│  ├─ 共发现工具: 15
+│  ├─ 已在策略中声明: 8
+│  ├─ 发现未声明: 2
+│  └─ 表格: [tool_name, source, status]
 │
-├─ Policy Violations
-│  ├─ Violation 1: Undeclared tool 'bash_execute'
+├─ 策略违规
+│  ├─ 违规 1: 未声明的工具 'bash_execute'
 │  │  ├─ Severity: Critical
-│  │  ├─ Count: 3 calls detected
-│  │  └─ Remediation: Remove bash_execute or add to declared_tools
+│  │  ├─ 计数: 检测到 3 次调用
+│  │  └─ 修复建议: 移除 bash_execute 或将其加入 declared_tools
 │  │
-│  └─ Violation 2: Parameter out of range
+│  └─ 违规 2: 参数越界
 │     ├─ Tool: read_file
 │     ├─ Argument: '/etc/passwd'
 │     ├─ Policy: '^/data/.*'
 │     ├─ Severity: High
-│     └─ Remediation: Update policy or fix agent code
+│     └─ 修复建议: 更新策略或修正 agent 代码
 │
-├─ Execution Trace (sample)
+├─ 执行轨迹（样例）
 │  ├─ Call 1: read_file('/data/repo/README.md') ✅ PASS
 │  ├─ Call 2: http_get('https://api.github.com/repos') ✅ PASS
 │  ├─ Call 3: bash_execute('ls -la /etc') ❌ FAIL (undeclared)
 │  └─ ...
 │
-├─ Audit Trail
+├─ 审计留痕
 │  ├─ Tester: ci-system@github.com
 │  ├─ Run ID: apcv-20260912-143000
-│  └─ Signature: [SHA256 hash for chain-of-custody]
+│  └─ Signature: [用于证据链保全的 SHA256 哈希]
 │
-└─ Recommended Actions
-   ├─ Option A: Modify agent code (remove bash calls)
-   ├─ Option B: Extend policy (justify why bash is needed)
-   └─ Contact: security-team@company.com for approval
+└─ 建议操作
+   ├─ 方案 A: 修改 agent 代码（移除 bash 调用）
+   ├─ 方案 B: 扩展策略（说明为何需要 bash）
+   └─ 审批联系: security-team@company.com
 ```
