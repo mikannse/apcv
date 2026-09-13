@@ -202,6 +202,7 @@ apcv/
 ## 延后事项
 
 - **LangGraph 之外的多框架支持**: AgentScope、AutoGen 适配器延后至 Sprint 2。架构通过 Adapter 模式予以支持（AD-6）。
+- **包级工具面扫描（story-9）**: ToolScanner 当前仅单文件扫描；真实 Agent 是一整个代码库。包级（多文件）扫描——遍历包、逐模块 AST 解析 `@tool`、合并为一份带来源文件定位的 SBOM——延后至 Sprint 2。当前靠 enterprise-sim/gate.py 外部薄集成绕过（2026-09-13 纳入 story-9 追踪）。
 - **LLM 辅助的 Probe 生成**: 当前为静态 probe 库（30-50 个 probe）。动态/对抗性 probe 生成延后至 Sprint 2。参考：Garak 框架集成。
 - **高级策略特性**: 条件规则（如 "if A then B"）、时序约束、委托链延后至 Sprint 2。
 - **运行时监控模式（Runtime Monitoring Mode）**: MVP 仅做部署前验证。持续运行时监控延后至 Sprint 2+。

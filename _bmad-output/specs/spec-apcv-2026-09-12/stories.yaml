@@ -317,6 +317,46 @@ stories:
     assignee: tech-writer + backend-team
     priority: high
 
+  - id: story-9
+    title: "包级工具面扫描（Package-Level Tool Surface Scanning）"
+    epic: "Sprint 2: 多文件/包级发现"
+
+    description: |
+      ToolScanner 目前只扫描单个 Python 文件。真实企业 Agent 是一整个代码库
+      （多文件、多模块），当前靠 enterprise-sim/pre-launch-gate/gate.py 这种外部
+      薄集成来遍历包并合并 SBOM。本故事将包级扫描内建进 ToolScanner，替代该薄集成。
+
+    spec_checkpoint: |
+      补全 CAP-1（工具面发现）的"框架层包级发现"——多文件/多模块合并
+      为 CAP-1 四层发现打地基
+
+    done_checkpoint: |
+      ✅ ToolScanner.scan() 支持传入包目录，递归扫描所有 .py 模块的 @tool
+      ✅ 合并 SBOM 时每条工具记录来源文件（模块路径定位）
+      ✅ 向后兼容：单文件扫描路径保持不变
+      ✅ enterprise-sim/gate.py 改为直接调用内建包级扫描（删除薄集成逻辑）
+      ✅ 单元 + 集成测试：多文件包、嵌套目录、跨模块工具去重
+
+    invoke_dev_with: |
+      - 扩展 ToolScanner.scan() 接受目录路径：walk 包内 .py，逐个 AST 解析
+      - SBOM 的 Tool 增加 source_file 字段（来源模块定位）
+      - 合并逻辑：跨模块 @tool 去重、同名冲突告警
+      - 重构 enterprise-sim/gate.py，改为调用内建包级扫描
+      - 测试：多文件包（含嵌套目录）、导入失败的模块降级处理
+
+    user_story: "作为 DevOps 工程师，我希望 APCV 能直接扫描整个 Agent 代码库而非单个文件，以便对真实企业 Agent 做上线前验证，无需手写遍历脚本。"
+
+    acceptance_criteria:
+      - ToolScanner 能对包目录递归发现所有模块中的 @tool
+      - 合并后的 SBOM 每条工具标注来源文件
+      - 单文件扫描向后兼容，不破坏现有 CLI
+      - gate.py 的薄集成被内建包级扫描取代
+      - 多文件/嵌套目录/跨模块去重场景有测试覆盖
+
+    estimate_days: 2
+    assignee: backend-team
+    priority: high
+
 # ---------------------------------------------------------------------------
 # 以下为供人类阅读的 Sprint 规划说明（原文 "---" 分隔之后的 Markdown 内容，
 # 为保持整个文件可作为单一 YAML 文档解析，收纳进块标量，内容未删减）。
