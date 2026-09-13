@@ -1,5 +1,17 @@
-"""Sample simple LangGraph agent for testing"""
-from langraph import tool
+"""Sample simple agent for testing.
+
+Uses a self-contained `tool` marker so the fixture imports without pulling in
+the langchain dependency (the static scanner and ProbeHost only care that the
+decorator is *named* `tool`). Real LangGraph agents use
+`langchain_core.tools.tool`; the identification heuristic is identical.
+"""
+from typing import Any, Callable
+
+
+def tool(fn: Callable) -> Callable:
+    """Minimal tool marker: tag the function and return it unchanged."""
+    setattr(fn, "_apcv_tool", True)
+    return fn
 
 
 @tool

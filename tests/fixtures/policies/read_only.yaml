@@ -6,7 +6,9 @@ metadata:
 
 boundaries:
   tool:
-    allowed_tools: []
+    allowed_tools:
+      - search_documents
+      - get_issue # 故意漏掉 list_repos
     denied_tools: []
 
   filesystem:

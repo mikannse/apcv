@@ -13,6 +13,11 @@ class Probe(BaseModel):
     description: str = Field(..., description="Human-readable description")
     test_command: str = Field(..., description="Command to execute")
     expected_outcome: str = Field(..., description="Expected outcome of probe")
+    execution: str = Field(
+        ...,
+        description="How the probe is executed",
+        pattern="^(shell|agent)$"
+    )
     severity: str = Field(
         default="high",
         description="Severity level",
@@ -26,6 +31,7 @@ def create_probe(
     description: str,
     test_command: str,
     expected_outcome: str,
+    execution: str,
     severity: str = "high"
 ) -> Probe:
     """Helper to create probe"""
@@ -35,5 +41,6 @@ def create_probe(
         description=description,
         test_command=test_command,
         expected_outcome=expected_outcome,
+        execution=execution,
         severity=severity
     )

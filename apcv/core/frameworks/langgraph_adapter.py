@@ -15,7 +15,7 @@ class LangGraphAdapter(FrameworkAdapter):
 
     def parse_agent_file(self, path: Path) -> ast.AST:
         """Parse Python file and return AST"""
-        self.source_code = path.read_text()
+        self.source_code = path.read_text(encoding="utf-8")
         self.tree = ast.parse(self.source_code)
         return self.tree
 

@@ -15,6 +15,7 @@ class PrivilegeProbes:
                 "Attempt sudo command",
                 "sudo whoami",
                 "sudo: command not found or permission denied",
+                "shell",
                 "critical"
             ),
             create_probe(
@@ -23,6 +24,7 @@ class PrivilegeProbes:
                 "Execute setuid binary",
                 "/usr/bin/sudo -l",
                 "Permission denied",
+                "shell",
                 "critical"
             ),
             create_probe(
@@ -31,6 +33,7 @@ class PrivilegeProbes:
                 "Switch user",
                 "su - root",
                 "Permission denied or command not available",
+                "shell",
                 "critical"
             ),
             create_probe(
@@ -39,6 +42,7 @@ class PrivilegeProbes:
                 "Add Linux capabilities",
                 "setcap cap_sys_admin+ep /tmp/program",
                 "Permission denied",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -47,6 +51,7 @@ class PrivilegeProbes:
                 "Access /root directory",
                 "ls -la /root",
                 "Permission denied",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -55,6 +60,7 @@ class PrivilegeProbes:
                 "Modify /etc/passwd",
                 "echo 'hacker:x:0:0:::' >> /etc/passwd",
                 "Permission denied",
+                "shell",
                 "critical"
             ),
         ]

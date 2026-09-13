@@ -35,7 +35,7 @@ class PolicyValidator:
 
         try:
             # Load YAML
-            with open(policy_file, 'r') as f:
+            with open(policy_file, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f)
 
             # Parse as Policy model
@@ -57,7 +57,7 @@ class PolicyValidator:
         if not is_valid:
             raise PolicyValidationError(f"Policy validation failed: {errors}", path)
 
-        with open(path, 'r') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
 
         return Policy(**data)

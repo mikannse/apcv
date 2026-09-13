@@ -22,16 +22,35 @@ class ConformanceResult:
 
     def detect_violations(self):
         """Detect violations between SBOM and policy"""
-        if "tool" in self.policy.boundaries:
-            tool_boundary = self.policy.boundaries["tool"]
-            allowed_tools = tool_boundary.get("allowed_tools", [])
+        if "tool" not in self.policy.boundaries:
+            return
 
-            if allowed_tools:
-                for tool in self.sbom.tools:
-                    if tool.name not in allowed_tools:
-                        self.violations.append(
-                            Violation("tool_not_allowed", f"Tool '{tool.name}' not in allowed list")
-                        )
+        tool_boundary = self.policy.boundaries["tool"]
+        denied_tools = tool_boundary.get("denied_tools", []) or []
+        # An explicitly declared (even empty) allow-list means deny-by-default.
+        # Only a missing key means "no allow-list constraint".
+        has_allow_list = "allowed_tools" in tool_boundary
+        allowed_tools = tool_boundary.get("allowed_tools", []) or []
+
+        for tool in self.sbom.tools:
+            # Deny always wins over allow.
+            if tool.name in denied_tools:
+                self.violations.append(
+                    Violation(
+                        "tool_denied",
+                        f"Tool '{tool.name}' is explicitly denied by policy",
+                        severity="critical",
+                    )
+                )
+                continue
+
+            if has_allow_list and tool.name not in allowed_tools:
+                self.violations.append(
+                    Violation(
+                        "tool_not_allowed",
+                        f"Tool '{tool.name}' not in allowed list",
+                    )
+                )
 
     def calculate_score(self) -> int:
         """Calculate compliance score (0-100)"""

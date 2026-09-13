@@ -45,8 +45,9 @@ development_status:
     title: "Isolated Execution & Parameter Tracing"
     epic: "Week 2: Dynamic Validation"
     description: "Implement Docker-based probe executor and wrapt parameter tracing"
-    status: "ready-for-dev"
-    last_updated: "2026-09-12"
+    status: "in-progress"
+    last_updated: "2026-09-13"
+    note: "correct-course 2026-09-13: AC 全部未兑现(executor stub、无 tracer/Dockerfile),状态回退,见 sprint-change-proposal"
     spec_checkpoint: "CAP-3 (Isolated Probe Execution & Parameter Tracing)"
     story_file: "_implementation/2-2-isolated-execution.md"
 
@@ -54,8 +55,8 @@ development_status:
     title: "Conformance Check & Diff Report Generation"
     epic: "Week 2: Verdict & Reporting"
     description: "Implement conformance checker and policy validation rules"
-    status: "ready-for-dev"
-    last_updated: "2026-09-12"
+    status: "review"
+    last_updated: "2026-09-13"
     spec_checkpoint: "CAP-4 (Conformance Check & Diff Report)"
     story_file: "_implementation/2-3-conformance-check.md"
 

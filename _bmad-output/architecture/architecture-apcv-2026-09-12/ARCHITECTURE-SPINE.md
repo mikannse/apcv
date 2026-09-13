@@ -4,128 +4,128 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: Functional Layering
-scope: Complete MVP product supporting LangGraph, with extensible adapter pattern for other frameworks
+scope: 支持 LangGraph 的完整 MVP 产品，并通过可扩展的适配器模式支持其他框架
 status: draft
 created: 2026-09-12
 updated: 2026-09-12
 binds: []
 sources:
-  - Brainstorm Summary (2026-09-12)
-  - Project Plan (2026-09-12)
-  - Tool/Probe Research (2026-09-12)
-  - Open Source Survey (2026-09-12)
+  - 头脑风暴摘要（2026-09-12）
+  - 项目计划（2026-09-12）
+  - 工具/Probe 研究（2026-09-12）
+  - 开源调研（2026-09-12）
 companions: []
 ---
 
-# Architecture Spine — Agent Policy Conformance Validator
+# 架构主干 — Agent Policy Conformance Validator
 
-## Design Paradigm
+## 设计范式
 
-**Functional Layering with Framework Abstraction**
+**功能分层 + 框架抽象（Functional Layering with Framework Abstraction）**
 
-System organized into three functional layers processing Agent capability verification:
-- **Scan Layer**: Discover Agent abilities across four security boundaries (Tool, Runtime, Network, Identity)
-- **Validate Layer**: Generate and execute boundary-crossing probes, capture execution traces
-- **Decision Layer**: Aggregate results, compute compliance score, generate verdict and reports
+系统按功能划分为三层，依次处理 Agent 能力验证：
+- **Scan 层（扫描层）**: 在四道安全边界（Tool、Runtime、Network、Identity）上发现 Agent 的能力
+- **Validate 层（验证层）**: 生成并执行越界探测（probe），捕获执行追踪（execution trace）
+- **Decision 层（决策层）**: 聚合结果，计算合规得分，生成裁决与报告
 
-Framework abstraction via Adapter Pattern isolates framework-specific logic from core scanners, enabling multi-framework support (LangGraph first, AgentScope/AutoGen as extensions).
+通过 Adapter 模式实现框架抽象，将框架相关逻辑与核心扫描器隔离，从而支持多框架（首先支持 LangGraph，AgentScope/AutoGen 作为扩展）。
 
-## Invariants & Rules
+## 不变量与规则
 
-### AD-1 — Three-Layer Functional Architecture
-- **Binds**: Overall system structure and data flow
-- **Prevents**: Mixing scanning, validation, and decision logic; unclear boundaries between components
-- **Rule**: Scan Layer → Validate Layer → Decision Layer. Each layer has defined input/output contracts. Data flows unidirectionally downward.
+### AD-1 — 三层功能架构
+- **Binds（约束）**: 系统整体结构与数据流
+- **Prevents（防止）**: 扫描、验证、决策逻辑相互混杂；组件之间边界不清
+- **Rule（规则）**: Scan 层 → Validate 层 → Decision 层。每层都有明确定义的输入/输出契约。数据单向向下流动。
 
-### AD-2 — Four Independent Scanners
-- **Binds**: Internal organization of Scan Layer
-- **Prevents**: Tight coupling between boundary scanners; adding new boundary types requires full refactor
-- **Rule**: ToolScanner, RuntimeScanner, NetworkScanner, IdentityScanner each implement common `Scanner` interface. Each produces independent SBOM file. Composition at output layer.
+### AD-2 — 四个独立扫描器
+- **Binds（约束）**: Scan 层的内部组织
+- **Prevents（防止）**: 各边界扫描器之间紧耦合；新增边界类型需要整体重构
+- **Rule（规则）**: ToolScanner、RuntimeScanner、NetworkScanner、IdentityScanner 各自实现统一的 `Scanner` 接口。每个扫描器产出独立的 SBOM 文件。在输出层进行组合。
 
-### AD-3 — SBOM Files with Index
-- **Binds**: How four scanner outputs are stored and accessed
-- **Prevents**: Forcing all dimensions to load together; inefficient memory for large SBOM files
-- **Rule**: Each scanner outputs independent JSON file (tool.json, runtime.json, network.json, identity.json) to `.apcv/sbom/`. Index file (index.json) lists all SBOM files. Validate layer loads only needed files on demand.
+### AD-3 — SBOM 文件 + 索引
+- **Binds（约束）**: 四个扫描器输出的存储与访问方式
+- **Prevents（防止）**: 强制所有维度一起加载；大型 SBOM 文件内存占用低效
+- **Rule（规则）**: 每个扫描器输出独立的 JSON 文件（tool.json、runtime.json、network.json、identity.json）到 `.apcv/sbom/`。索引文件（index.json）列出所有 SBOM 文件。Validate 层按需仅加载所需文件。
 
-### AD-4 — Validate Layer: Independent Validators + Shared Infrastructure
-- **Binds**: Validate layer internal organization
-- **Prevents**: Code duplication; tight coupling between validators; difficulty extending with new boundary types
-- **Rule**: Four independent validators (ToolValidator, RuntimeValidator, NetworkValidator, IdentityValidator) each implement common `Validator` interface. Shared infrastructure (ProbeExecutor, ParameterTracer, ProbeLibrary, PolicyEngine) available to all validators via dependency injection.
+### AD-4 — Validate 层：独立验证器 + 共享基础设施
+- **Binds（约束）**: Validate 层的内部组织
+- **Prevents（防止）**: 代码重复；验证器之间紧耦合；难以扩展新边界类型
+- **Rule（规则）**: 四个独立验证器（ToolValidator、RuntimeValidator、NetworkValidator、IdentityValidator）各自实现统一的 `Validator` 接口。共享基础设施（ProbeExecutor、ParameterTracer、ProbeLibrary、PolicyEngine）通过依赖注入供所有验证器使用。
 
-### AD-5 — Decision Layer: Unified Conformance Engine
-- **Binds**: How validation results are aggregated into final verdict
-- **Prevents**: Scattered decision logic; inconsistent scoring across dimensions
-- **Rule**: Single ConformanceDecisionEngine collects results from all four validators, computes weighted compliance score (0-100), generates unified violations list, outputs final PASS/FAIL verdict and reports in multiple formats.
+### AD-5 — Decision 层：统一一致性引擎（Conformance Engine）
+- **Binds（约束）**: 验证结果如何聚合为最终裁决
+- **Prevents（防止）**: 决策逻辑分散；各维度评分标准不一致
+- **Rule（规则）**: 单一的 ConformanceDecisionEngine 收集全部四个验证器的结果，计算加权合规得分（0-100），生成统一的违规列表，输出最终 PASS/FAIL 裁决并以多种格式生成报告。
 
-### AD-6 — Framework Abstraction via Adapter Pattern
-- **Binds**: How system interacts with different Agent frameworks
-- **Prevents**: Framework lock-in; difficulty supporting multiple frameworks; direct dependency on framework APIs in core scanners
-- **Rule**: Define unified `FrameworkAdapter` interface. Each framework gets concrete adapter (LangGraphAdapter, AgentScopeAdapter, etc.). All scanners receive adapter instance, remain framework-agnostic. MVP implements LangGraphAdapter only; additional adapters added in future sprints.
+### AD-6 — 通过 Adapter 模式实现框架抽象
+- **Binds（约束）**: 系统与各 Agent 框架的交互方式
+- **Prevents（防止）**: 框架锁定；难以支持多框架；核心扫描器直接依赖框架 API
+- **Rule（规则）**: 定义统一的 `FrameworkAdapter` 接口。每个框架对应一个具体适配器（LangGraphAdapter、AgentScopeAdapter 等）。所有扫描器接收 adapter 实例，保持与框架无关。MVP 仅实现 LangGraphAdapter；后续 Sprint 再增加其他适配器。
 
-### AD-7 — CLI Interface Design
-- **Binds**: Command structure, parameter options, output behavior
-- **Prevents**: Unclear interface; non-standard parameters; poor CI/CD integration
-- **Rule**: Single `apcv validate` command. Required params: `--agent`, `--policy`. Optional: `--output`, `--format` (json/sarif/html), `--fail-on` (score threshold), `--workers` (concurrency), `--timeout`. Always outputs table to stdout and JSON to `.apcv/reports/`. Exit code: 0=PASS, 1=FAIL, 2=error.
+### AD-7 — CLI 接口设计
+- **Binds（约束）**: 命令结构、参数选项、输出行为
+- **Prevents（防止）**: 接口不清晰；参数不规范；难以集成 CI/CD
+- **Rule（规则）**: 单一 `apcv validate` 命令。必需参数：`--agent`、`--policy`。可选参数：`--output`、`--format`（json/sarif/html）、`--fail-on`（得分阈值）、`--workers`（并发数）、`--timeout`。始终以表格形式输出到 stdout，并将 JSON 输出到 `.apcv/reports/`。退出码：0=PASS，1=FAIL，2=错误。
 
-### AD-8 — Output Format and Reporting
-- **Binds**: What CLI outputs and what gets saved for audit
-- **Prevents**: Lost information; unclear compliance status; difficult historical analysis
-- **Rule**: Terminal output = human-readable table (tool SBOM, violations, compliance score). Automatically saved to `.apcv/reports/{timestamp}_{agent_name}.json` = full execution trace + metadata. Additional formats (SARIF, PDF, HTML) generated on demand via `--format` flag.
+### AD-8 — 输出格式与报告
+- **Binds（约束）**: CLI 的输出内容以及为审计保存的内容
+- **Prevents（防止）**: 信息丢失；合规状态不清晰；历史分析困难
+- **Rule（规则）**: 终端输出 = 人类可读的表格（工具 SBOM、违规项、合规得分）。自动保存到 `.apcv/reports/{timestamp}_{agent_name}.json` = 完整执行追踪 + 元数据。其他格式（SARIF、PDF、HTML）通过 `--format` 参数按需生成。
 
-### AD-9 — Policy DSL Design
-- **Binds**: Policy declaration syntax and structure
-- **Prevents**: Ambiguous policy definitions; difficult to compose reusable policies
-- **Rule**: YAML-based declarative format with five sections: `metadata`, and four `boundaries` (tool, runtime, network, identity). Each boundary specifies `allowed` and `denied` lists plus constraints (path patterns, domain whitelists, etc.).
+### AD-9 — 策略 DSL 设计
+- **Binds（约束）**: 策略的声明语法与结构
+- **Prevents（防止）**: 策略定义含糊；难以组合可复用的策略
+- **Rule（规则）**: 基于 YAML 的声明式格式，包含五个部分：`metadata` 以及四个 `boundaries`（tool、runtime、network、identity）。每个边界指定 `allowed` 和 `denied` 列表，外加约束条件（路径模式、域名白名单等）。
 
-### AD-10 — Web UI Architecture
-- **Binds**: Web interface structure and data model
-- **Prevents**: Tight coupling between backend and frontend; difficult to extend with new visualizations
-- **Rule**: Backend: FastAPI + file-based storage (.apcv/reports/). Frontend: React/Vue dashboard consuming backend APIs. Dashboard shows: Agent list with compliance cards, historical trends, policy editor, execution timeline, report export. MVP single-process deployment; backend and frontend can separate in future.
+### AD-10 — Web UI 架构
+- **Binds（约束）**: Web 接口结构与数据模型
+- **Prevents（防止）**: 前后端紧耦合；难以扩展新的可视化功能
+- **Rule（规则）**: 后端：FastAPI + 基于文件的存储（.apcv/reports/）。前端：消费后端 API 的 React/Vue 仪表盘。仪表盘展示：带合规卡片的 Agent 列表、历史趋势、策略编辑器、执行时间线、报告导出。MVP 采用单进程部署；未来可将前后端分离。
 
-### AD-11 — Error Handling and Logging
-- **Binds**: How errors are handled and logged across all layers
-- **Prevents**: Silent failures; difficult debugging; lost error context
-- **Rule**: Three-tier error handling: silent failures (scanner error → log + continue), non-fatal (probe timeout → WARNING flag + continue), fatal (invalid policy → stop immediately + exit 2). All logs written to `.apcv/logs/{timestamp}.log` with structured JSON format.
+### AD-11 — 错误处理与日志
+- **Binds（约束）**: 各层如何处理与记录错误
+- **Prevents（防止）**: 静默失败；调试困难；错误上下文丢失
+- **Rule（规则）**: 三级错误处理：静默失败（scanner 出错 → 记录日志 + 继续执行）、非致命错误（probe 超时 → 标记 WARNING + 继续执行）、致命错误（策略无效 → 立即停止 + 以 2 退出）。所有日志以结构化 JSON 格式写入 `.apcv/logs/{timestamp}.log`。
 
-## Consistency Conventions
+## 一致性约定
 
-| Concern | Convention |
+| 关注点 | 约定 |
 |---------|-----------|
-| **Naming** | Classes: PascalCase (ToolScanner, ConformanceDecisionEngine). Functions/vars: snake_case. Files: lowercase_with_underscores.py. |
-| **Data Formats** | SBOM: JSON Schema 2020-12. Reports: UTF-8 JSON. Logs: JSON Lines (one JSON object per line). |
-| **Configuration** | Policy files: YAML (human readable, version-controllable). Runtime config: env vars + CLI flags (CLI flags override env vars). |
-| **State Management** | Immutable data structures where possible. State mutations logged explicitly. No shared mutable state between scanners. |
-| **Error Handling** | Exceptions propagated with context (filename, line number, operation name). Custom exceptions inherit from base `APCVException`. All exceptions logged before re-raising. |
-| **Asynchronous** | Probe execution: concurrent (use ThreadPoolExecutor or asyncio). Tool call interception: must support both sync and async tools via wrapt + asyncio hooks. |
+| **命名** | 类：PascalCase（ToolScanner、ConformanceDecisionEngine）。函数/变量：snake_case。文件：lowercase_with_underscores.py。 |
+| **数据格式** | SBOM：JSON Schema 2020-12。报告：UTF-8 JSON。日志：JSON Lines（每行一个 JSON 对象）。 |
+| **配置** | 策略文件：YAML（人类可读、可版本管理）。运行时配置：环境变量 + CLI 参数（CLI 参数覆盖环境变量）。 |
+| **状态管理** | 尽可能使用不可变数据结构。状态变更需显式记录日志。Scanner 之间不共享可变状态。 |
+| **错误处理** | 异常传播时携带上下文（文件名、行号、操作名）。自定义异常继承自基类 `APCVException`。所有异常在重新抛出前先记录日志。 |
+| **异步** | Probe 执行：并发（使用 ThreadPoolExecutor 或 asyncio）。工具调用拦截：必须通过 wrapt + asyncio hooks 同时支持同步与异步工具。 |
 
-## Stack
+## 技术栈
 
-| Name | Version | Purpose |
+| 名称 | 版本 | 用途 |
 |------|---------|---------|
-| Python | 3.9+ | Language |
-| LangGraph | 0.1.0+ | Agent framework (MVP) |
-| wrapt | 1.14+ | Parameter interception |
-| Docker Python SDK | 6.0+ | Probe sandbox isolation |
-| OPA/Rego | 0.45+ | Policy evaluation (primary) or AgenticContract for MVP |
-| FastAPI | 0.100+ | Web UI backend |
-| React | 18+ | Web UI frontend |
-| Pydantic | 2.0+ | Data validation |
-| pytest | 7.0+ | Testing |
+| Python | 3.9+ | 编程语言 |
+| LangGraph | 0.1.0+ | Agent 框架（MVP） |
+| wrapt | 1.14+ | 参数拦截 |
+| Docker Python SDK | 6.0+ | Probe 沙箱隔离 |
+| OPA/Rego | 0.45+ | 策略求值（首选），MVP 也可用 AgenticContract |
+| FastAPI | 0.100+ | Web UI 后端 |
+| React | 18+ | Web UI 前端 |
+| Pydantic | 2.0+ | 数据校验 |
+| pytest | 7.0+ | 测试 |
 
-## Structural Seed
+## 结构种子
 
 ```
 apcv/
-├── core/                          # Core engine
+├── core/                          # 核心引擎
 │   ├── scanners/
-│   │   ├── base.py               # Scanner abstract interface
+│   │   ├── base.py               # Scanner 抽象接口
 │   │   ├── tool_scanner.py
 │   │   ├── runtime_scanner.py
 │   │   ├── network_scanner.py
 │   │   └── identity_scanner.py
 │   │
 │   ├── validators/
-│   │   ├── base.py               # Validator abstract interface
+│   │   ├── base.py               # Validator 抽象接口
 │   │   ├── tool_validator.py
 │   │   ├── runtime_validator.py
 │   │   ├── network_validator.py
@@ -133,32 +133,32 @@ apcv/
 │   │
 │   ├── decision/
 │   │   ├── conformance_engine.py  # ConformanceDecisionEngine
-│   │   └── scoring.py            # Scoring logic
+│   │   └── scoring.py            # 评分逻辑
 │   │
-│   ├── infrastructure/
-│   │   ├── probe_executor.py     # Docker-based probe execution
-│   │   ├── parameter_tracer.py   # wrapt-based interception
-│   │   ├── probe_library.py      # Probe templates
-│   │   └── policy_engine.py      # Policy evaluation (OPA/Rego wrapper)
+│   ├── execution/                # 2026-09-13 调和:采纳 story 2-2 布局
+│   │   ├── executor.py           # IsolatedExecutor（Docker 沙箱执行器）
+│   │   ├── sandbox.py            # 策略 → Docker 运行参数（纯函数）
+│   │   ├── tracer.py             # 基于 wrapt 的参数拦截
+│   │   └── trace_model.py        # 执行轨迹 schema（JSONL）
 │   │
 │   └── frameworks/
-│       ├── adapter.py            # FrameworkAdapter abstract interface
-│       ├── langgraph_adapter.py  # LangGraphAdapter (MVP)
-│       └── agentscope_adapter.py # AgentScopeAdapter (future)
+│       ├── adapter.py            # FrameworkAdapter 抽象接口
+│       ├── langgraph_adapter.py  # LangGraphAdapter（MVP）
+│       └── agentscope_adapter.py # AgentScopeAdapter（未来）
 │
 ├── cli/
-│   ├── main.py                   # apcv validate command entry point
-│   ├── output.py                 # Table formatting, report generation
-│   └── config.py                 # CLI argument parsing
+│   ├── main.py                   # apcv validate 命令入口
+│   ├── output.py                 # 表格格式化、报告生成
+│   └── config.py                 # CLI 参数解析
 │
 ├── web/
 │   ├── backend/
-│   │   ├── app.py               # FastAPI application
+│   │   ├── app.py               # FastAPI 应用
 │   │   ├── api/
 │   │   │   ├── reports.py
 │   │   │   ├── policies.py
 │   │   │   └── agents.py
-│   │   └── models.py            # Pydantic models
+│   │   └── models.py            # Pydantic 模型
 │   │
 │   └── frontend/
 │       ├── src/
@@ -179,32 +179,32 @@ apcv/
 │   └── examples/
 │
 ├── config/
-│   └── probe_library.yaml        # Probe templates
+│   └── probe_library.yaml        # Probe 模板
 │
 └── requirements.txt
 ```
 
-## Capability → Architecture Map
+## 能力 → 架构映射
 
-| Capability/Area | Lives in | Governed by |
+| 能力/领域 | 所在位置 | 受哪些决策约束 |
 |---|---|---|
-| Discover Agent tools across frameworks | Scanner layer + FrameworkAdapter | AD-2, AD-6 |
-| Intercept tool calls and capture parameters | ParameterTracer | AD-11 (async support), core design |
-| Generate policy-relative probes for four boundaries | ProbeLibrary + Validators | AD-4 |
-| Execute probes in isolated sandbox | ProbeExecutor | Docker SDK, security via AD-11 |
-| Evaluate execution trace against policy | PolicyEngine | OPA/Rego or AgenticContract, AD-9 |
-| Compute compliance score across dimensions | ConformanceDecisionEngine | AD-5, scoring algorithm |
-| CLI interface for CI/CD integration | cli/main.py | AD-7, AD-8 |
-| Web UI dashboard and policy editor | web/backend + frontend | AD-10 |
-| Persist verification results for audit | .apcv/reports/ | AD-3, AD-8 |
-| Log all operations for debugging | .apcv/logs/ | AD-11 |
+| 跨框架发现 Agent 工具 | Scanner 层 + FrameworkAdapter | AD-2、AD-6 |
+| 拦截工具调用并捕获参数 | ParameterTracer | AD-11（异步支持）、核心设计 |
+| 为四个边界生成策略相关 probe | ProbeLibrary + Validators | AD-4 |
+| 在隔离沙箱中执行 probe | core/execution/executor.py | Docker SDK，安全性依据 AD-11 |
+| 依据策略评估执行追踪 | PolicyEngine | OPA/Rego 或 AgenticContract，AD-9 |
+| 跨维度计算合规得分 | ConformanceDecisionEngine | AD-5、评分算法 |
+| 面向 CI/CD 集成的 CLI 接口 | cli/main.py | AD-7、AD-8 |
+| Web UI 仪表盘与策略编辑器 | web/backend + frontend | AD-10 |
+| 持久化验证结果以供审计 | .apcv/reports/ | AD-3、AD-8 |
+| 记录所有操作日志以便调试 | .apcv/logs/ | AD-11 |
 
-## Deferred
+## 延后事项
 
-- **Multi-framework support beyond LangGraph**: AgentScope, AutoGen adapters deferred to Sprint 2. Architecture supports via Adapter Pattern (AD-6).
-- **LLM-assisted Probe generation**: Currently static probe library (30-50 probes). Dynamic/adversarial probe generation deferred to Sprint 2. Reference: Garak framework integration.
-- **Advanced policy features**: Conditional rules (e.g., "if A then B"), temporal constraints, delegation chains deferred to Sprint 2.
-- **Runtime Monitoring Mode**: MVP is pre-deployment validation only. Continuous runtime monitoring deferred to Sprint 2+.
-- **Compliance Reporting Automation**: Manual SBOM/audit proof generation in MVP. Automated compliance mapping (NIST, EU AI Act, ISO) deferred to Sprint 2.
-- **High-security sandboxing**: MVP uses Docker (OS-level isolation). gVisor (syscall filtering), Firecracker (micro-VM) deferred to Sprint 2 for high-risk agents.
-- **Horizontal scaling**: MVP is single-process. Distributed execution and cloud deployment deferred to production phase.
+- **LangGraph 之外的多框架支持**: AgentScope、AutoGen 适配器延后至 Sprint 2。架构通过 Adapter 模式予以支持（AD-6）。
+- **LLM 辅助的 Probe 生成**: 当前为静态 probe 库（30-50 个 probe）。动态/对抗性 probe 生成延后至 Sprint 2。参考：Garak 框架集成。
+- **高级策略特性**: 条件规则（如 "if A then B"）、时序约束、委托链延后至 Sprint 2。
+- **运行时监控模式（Runtime Monitoring Mode）**: MVP 仅做部署前验证。持续运行时监控延后至 Sprint 2+。
+- **合规报告自动化**: MVP 中 SBOM/审计证明为手动生成。自动化合规映射（NIST、EU AI Act、ISO）延后至 Sprint 2。
+- **高安全沙箱**: MVP 使用 Docker（操作系统级隔离）。gVisor（系统调用过滤）、Firecracker（微虚拟机）针对高风险 Agent 延后至 Sprint 2。
+- **水平扩展**: MVP 为单进程。分布式执行与云部署延后至生产阶段。

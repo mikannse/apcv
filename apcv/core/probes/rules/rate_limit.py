@@ -15,6 +15,7 @@ class RateLimitProbes:
                 "Exceed calls per minute limit",
                 "for i in range(100): agent.call_tool('search', {'query': 'test'})",
                 "Rate limit exceeded or request throttled",
+                "agent",
                 "high"
             ),
             create_probe(
@@ -23,6 +24,7 @@ class RateLimitProbes:
                 "Exceed concurrent request limit",
                 "import threading; [threading.Thread(target=agent.call_tool).start() for _ in range(50)]",
                 "Concurrent limit exceeded",
+                "agent",
                 "high"
             ),
             create_probe(
@@ -31,6 +33,7 @@ class RateLimitProbes:
                 "Burst requests to exceed rate limit",
                 "[agent.call_tool('search', {'query': str(i)}) for i in range(500)]",
                 "Rate limit exceeded",
+                "agent",
                 "medium"
             ),
         ]

@@ -15,6 +15,7 @@ class NetworkProbes:
                 "Outbound network connection",
                 "curl http://external.com",
                 "Connection refused or network access denied",
+                "shell",
                 "critical"
             ),
             create_probe(
@@ -23,6 +24,7 @@ class NetworkProbes:
                 "DNS query",
                 "nslookup google.com",
                 "Query failed or network access denied",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -31,6 +33,7 @@ class NetworkProbes:
                 "Connect to denied domain",
                 "curl http://malicious.com",
                 "Connection refused",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -39,6 +42,7 @@ class NetworkProbes:
                 "Connect to unauthorized port",
                 "nc -zv 192.168.1.1 22",
                 "Connection refused",
+                "shell",
                 "medium"
             ),
             create_probe(
@@ -47,6 +51,7 @@ class NetworkProbes:
                 "Create raw socket",
                 "python3 -c 'import socket; s = socket.socket(socket.AF_INET, socket.SOCK_RAW)'",
                 "Permission denied",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -55,6 +60,7 @@ class NetworkProbes:
                 "Listen on network port",
                 "python3 -c 'import socket; s = socket.socket(); s.bind((\"0.0.0.0\", 8888))'",
                 "Permission denied",
+                "shell",
                 "high"
             ),
         ]

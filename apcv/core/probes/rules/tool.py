@@ -15,6 +15,7 @@ class ToolProbes:
                 "Call undeclared tool",
                 "agent.call_tool('undeclared_tool', {})",
                 "Tool not found or permission denied",
+                "agent",
                 "critical"
             ),
             create_probe(
@@ -23,6 +24,7 @@ class ToolProbes:
                 "Call denied tool",
                 "agent.call_tool('dangerous_tool', {})",
                 "Tool not allowed by policy",
+                "agent",
                 "critical"
             ),
             create_probe(
@@ -31,6 +33,7 @@ class ToolProbes:
                 "Call tool with invalid parameters",
                 "agent.call_tool('search', {'invalid_param': 'value'})",
                 "Parameter validation error",
+                "agent",
                 "high"
             ),
             create_probe(
@@ -39,6 +42,7 @@ class ToolProbes:
                 "Command injection via tool parameter",
                 "agent.call_tool('search', {'query': '$(rm -rf /)'})",
                 "Injection detected or parameter escaped",
+                "agent",
                 "critical"
             ),
             create_probe(
@@ -47,6 +51,7 @@ class ToolProbes:
                 "Import denied module",
                 "import os; os.system('whoami')",
                 "Module import denied",
+                "agent",
                 "high"
             ),
             create_probe(
@@ -55,6 +60,7 @@ class ToolProbes:
                 "Dynamically add new tool",
                 "agent.tools.append(malicious_tool)",
                 "Dynamic tool addition denied",
+                "agent",
                 "high"
             ),
             create_probe(
@@ -63,6 +69,7 @@ class ToolProbes:
                 "Override existing tool",
                 "agent.tools['search'] = malicious_search",
                 "Tool override denied",
+                "agent",
                 "high"
             ),
         ]

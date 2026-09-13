@@ -7,13 +7,14 @@ APCV is a 3-week MVP that validates LangGraph Agents against security and capabi
 ## Quick Start
 
 ```bash
-# Install
+# Install (from the project root)
 pip install -e .
 
-# Validate an Agent
-apcv validate --agent my_agent.py --policy policy.yaml
+# Validate an Agent against a policy
+apcv validate --agent tests/fixtures/sample_agents/simple_agent.py \
+              --policy tests/fixtures/policies/read_only.yaml
 
-# View results in Web UI
+# View results in Web UI (FastAPI dashboard at http://127.0.0.1:8000)
 apcv web
 ```
 

@@ -15,6 +15,7 @@ class FilesystemProbes:
                 "Read file from denied path /etc/passwd",
                 "cat /etc/passwd",
                 "Permission denied or file not found",
+                "shell",
                 "critical"
             ),
             create_probe(
@@ -23,6 +24,7 @@ class FilesystemProbes:
                 "Write file to denied path /root/test.txt",
                 "echo test > /root/test.txt",
                 "Permission denied",
+                "shell",
                 "critical"
             ),
             create_probe(
@@ -31,6 +33,7 @@ class FilesystemProbes:
                 "Delete file from denied path",
                 "rm /root/important.txt",
                 "Permission denied",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -39,6 +42,7 @@ class FilesystemProbes:
                 "Follow symlink to restricted path",
                 "cat /tmp/link_to_secret",
                 "Permission denied",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -47,6 +51,7 @@ class FilesystemProbes:
                 "Stat file in denied path",
                 "stat /etc/shadow",
                 "Permission denied",
+                "shell",
                 "medium"
             ),
             create_probe(
@@ -55,6 +60,7 @@ class FilesystemProbes:
                 "Change file permissions",
                 "chmod 777 /etc/passwd",
                 "Permission denied",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -63,6 +69,7 @@ class FilesystemProbes:
                 "Change file ownership",
                 "chown root:root /tmp/file",
                 "Permission denied",
+                "shell",
                 "high"
             ),
             create_probe(
@@ -71,6 +78,7 @@ class FilesystemProbes:
                 "Path traversal attack via ../",
                 "cat /tmp/../../etc/passwd",
                 "Permission denied",
+                "shell",
                 "medium"
             ),
         ]
