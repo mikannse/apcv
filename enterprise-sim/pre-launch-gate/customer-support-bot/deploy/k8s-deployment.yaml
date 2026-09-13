@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: support-bot
+  namespace: support
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: support-bot
+  template:
+    metadata:
+      labels:
+        app: support-bot
+    spec:
+      serviceAccountName: support-bot
+      containers:
+        - name: agent
+          image: registry.internal.corp/support-bot:2.3.0
+          env:
+            - name: SUPPORT_INTERNAL_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: support-bot-secrets
+                  key: internal-api-token
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: support-bot
+  namespace: support
+spec:
+  selector:
+    app: support-bot
+  ports:
+    - port: 80
+      targetPort: 8000
+---
+# The platform's intent: this agent must NOT reach out to the internet.
+# The release gate exists to catch agent code that violates this intent.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: support-bot-no-egress
+  namespace: support
+spec:
+  podSelector:
+    matchLabels:
+      app: support-bot
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}          # only east-west within cluster
+      ports:
+        - protocol: TCP
+          port: 443

@@ -1,0 +1,47 @@
+# Enterprise AI-Agent Release Baseline -- enforced by the pre-launch gate.
+# Any agent promoted to prod must score PASS against this policy.
+# Rules mirror real enterprise AI governance: read-preferred, no unapproved
+# egress, no arbitrary code execution, no raw host filesystem, least-privilege
+# network, human-approval on sensitive actions (cf. 2026-06 LangChain survey).
+metadata:
+  name: "Corp AI Release Baseline"
+  version: "2.0"
+  description: "Mandatory pre-production conformance gate for enterprise agents"
+  author: "platform-security"
+  tags: [release-gate, least-privilege]
+
+boundaries:
+  tool:
+    # Deny-by-default: anything not explicitly sanctioned is blocked, and the
+    # named dangerous capabilities are denied even if a manifest asks for them.
+    allowed_tools:
+      - search_help_articles
+      - get_customer_profile
+      - create_support_ticket
+    denied_tools:
+      - run_python            # arbitrary code execution
+      - read_host_file        # raw fs read -> secrets
+      - write_report          # raw fs write -> persistence
+      - call_internal_api     # privileged lateral movement
+      - fetch_external_url    # unapproved egress
+
+  filesystem:
+    allowed_paths:
+      - /app/support-agent/data
+    denied_paths:
+      - /etc
+      - /root
+      - /var/run/secrets
+    read_only: true
+
+  network:
+    network_enabled: false
+    allowed_domains: []
+    denied_domains:
+      - 169.254.169.254
+      - "*"
+
+  rate_limit:
+    calls_per_minute: 60
+    calls_per_hour: 2000
+    concurrent_limit: 8
