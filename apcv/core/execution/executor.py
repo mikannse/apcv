@@ -211,10 +211,12 @@ class IsolatedExecutor:
         agent_abs = str(Path(agent_path).resolve())
         agent_name = Path(agent_path).name
 
-        agent_probes = [p for p in probes if p.execution == "agent"]
+        # agent probes attempt a boundary violation; baseline probes record
+        # real tool behavior (success is the desired, non-hostile outcome).
+        probes = [p for p in probes if p.execution in ("agent", "baseline")]
         traces: List[ExecutionTrace] = []
 
-        for probe in agent_probes:
+        for probe in probes:
             # Mount the agent file read-only into the container and run the
             # entrypoint against it. The container runs non-root and with the
             # policy's network/read-only isolation (reuse sandbox config).
@@ -245,7 +247,7 @@ class IsolatedExecutor:
                 traces.append(
                     ExecutionTrace(
                         probe_id=probe.id,
-                        execution="agent",
+                        execution=probe.execution,
                         exit_code=-1,
                         output="probe timed out",
                         violation=False,
@@ -278,10 +280,15 @@ class IsolatedExecutor:
                 # violation but surface the raw text for diagnosis.
                 violation = False
 
+            # Baseline probes record behavior, never raise a violation: a
+            # successful tool invocation is the desired outcome.
+            if probe.execution == "baseline":
+                violation = False
+
             traces.append(
                 ExecutionTrace(
                     probe_id=probe.id,
-                    execution="agent",
+                    execution=probe.execution,
                     exit_code=exit_code,
                     output=output,
                     violation=violation,

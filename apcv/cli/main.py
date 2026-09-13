@@ -47,7 +47,17 @@ def validate(
         library = ProbeLibrary()
         generator = ProbeGenerator(library)
         probes = generator.generate(policy_obj)
-        typer.echo(f"✅ Generated {len(probes)} probes", err=True)
+        # Baseline probes record each declared tool's real behavior (audit
+        # evidence); they are derived from the SBOM, not the static rule lib.
+        from apcv.core.probes.baseline import generate_baseline_probes
+
+        baseline_probes = generate_baseline_probes(sbom, policy_obj)
+        probes = probes + baseline_probes
+        typer.echo(
+            f"✅ Generated {len(probes)} probes "
+            f"({len(baseline_probes)} baseline)",
+            err=True,
+        )
 
         # 4. Check conformance (static: SBOM vs policy)
         typer.echo("📋 Step 4: Checking conformance...", err=True)
@@ -84,9 +94,12 @@ def validate(
                         )
 
                 agent_violations = sum(1 for t in agent_traces if t.violation)
+                baseline_count = sum(1 for t in agent_traces if t.execution == "baseline")
                 typer.echo(
                     f"✅ Executed {len(execution_traces)} probes "
-                    f"({len(shell_traces)} sandbox self-check, {len(agent_traces)} agent), "
+                    f"({len(shell_traces)} sandbox self-check, "
+                    f"{len(agent_traces) - baseline_count} agent, "
+                    f"{baseline_count} baseline), "
                     f"{agent_violations} agent violations",
                     err=True,
                 )
