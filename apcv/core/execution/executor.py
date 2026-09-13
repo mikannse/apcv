@@ -178,14 +178,34 @@ class IsolatedExecutor:
         policy: Policy,
         workers: int = 4,
     ) -> List[ExecutionTrace]:
-        """Execute multiple probes.
+        """Execute multiple probes concurrently.
 
-        MVP keeps a simple sequential loop (deterministic, no shared mutable
-        state between containers). `workers` is accepted for CLI parity but the
-        executor currently runs serially to guarantee zero cross-pollution and
-        stable ordering; parallel execution is a later optimization.
+        Each probe runs in its own throwaway container with no shared mutable
+        state, so they can safely run in parallel. Results preserve input order
+        (ThreadPoolExecutor.map). A failed/raising probe is surfaced as a
+        non-violation trace rather than aborting the whole batch.
         """
-        return [self.execute_probe(p, policy) for p in probes]
+        if workers <= 1 or len(probes) <= 1:
+            return [self._execute_one(p, policy) for p in probes]
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            return list(pool.map(lambda p: self._execute_one(p, policy), probes))
+
+    def _execute_one(self, probe: Probe, policy: Policy) -> ExecutionTrace:
+        """Run one probe, converting unexpected errors into a non-violation trace."""
+        try:
+            return self.execute_probe(probe, policy)
+        except Exception as e:
+            return ExecutionTrace(
+                probe_id=probe.id,
+                execution=probe.execution,
+                exit_code=-1,
+                output=f"{type(e).__name__}: {e}",
+                violation=False,
+                severity=probe.severity,
+            )
 
     # -- Convenience ---------------------------------------------------------
 
@@ -226,90 +246,102 @@ class IsolatedExecutor:
         # agent probes attempt a boundary violation; baseline probes record
         # real tool behavior (success is the desired, non-hostile outcome).
         probes = [p for p in probes if p.execution in ("agent", "baseline")]
-        traces: List[ExecutionTrace] = []
 
-        for probe in probes:
-            # Mount the agent file read-only into the container and run the
-            # entrypoint against it. The container runs non-root and with the
-            # policy's network/read-only isolation (reuse sandbox config).
-            run_args = build_docker_run_args(
-                policy,
-                self.image,
-                [
-                    "--agent",
-                    f"/agent/{agent_name}",
-                    "--probe",
-                    probe.test_command,
-                ],
+        if len(probes) <= 1:
+            return [self._execute_agent_probe(p, policy, agent_abs, agent_name) for p in probes]
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            return list(pool.map(
+                lambda p: self._execute_agent_probe(p, policy, agent_abs, agent_name),
+                probes,
+            ))
+
+    def _execute_agent_probe(
+        self,
+        probe: Probe,
+        policy: Policy,
+        agent_abs: str,
+        agent_name: str,
+    ) -> ExecutionTrace:
+        """Run a single agent/baseline probe in its own container."""
+        import json
+
+        # Mount the agent file read-only into the container and run the
+        # entrypoint against it. The container runs non-root and with the
+        # policy's network/read-only isolation (reuse sandbox config).
+        run_args = build_docker_run_args(
+            policy,
+            self.image,
+            [
+                "--agent",
+                f"/agent/{agent_name}",
+                "--probe",
+                probe.test_command,
+            ],
+        )
+        # build_docker_run_args appends image + command; insert the volume
+        # mount BEFORE the image name.
+        idx = run_args.index(self.image)
+        run_args.insert(idx, "-v")
+        run_args.insert(idx + 1, f"{agent_abs}:/agent/{agent_name}:ro")
+
+        try:
+            result = subprocess.run(
+                [self.docker_bin, *run_args],
+                capture_output=True,
+                timeout=self.per_probe_timeout,
+                env=self._env,
             )
-            # build_docker_run_args appends image + command; insert the volume
-            # mount BEFORE the image name.
-            idx = run_args.index(self.image)
-            run_args.insert(idx, "-v")
-            run_args.insert(idx + 1, f"{agent_abs}:/agent/{agent_name}:ro")
+        except subprocess.TimeoutExpired:
+            return ExecutionTrace(
+                probe_id=probe.id,
+                execution=probe.execution,
+                exit_code=-1,
+                output="probe timed out",
+                violation=False,
+                severity=probe.severity,
+            )
 
-            try:
-                result = subprocess.run(
-                    [self.docker_bin, *run_args],
-                    capture_output=True,
-                    timeout=self.per_probe_timeout,
-                    env=self._env,
-                )
-            except subprocess.TimeoutExpired:
-                traces.append(
-                    ExecutionTrace(
-                        probe_id=probe.id,
-                        execution=probe.execution,
-                        exit_code=-1,
-                        output="probe timed out",
-                        violation=False,
-                        severity=probe.severity,
-                    )
-                )
-                continue
+        stdout = result.stdout.decode(errors="replace")
+        exit_code = result.returncode
 
-            stdout = result.stdout.decode(errors="replace")
-            exit_code = result.returncode
+        # Parse the JSON result emitted by entrypoint.py.
+        violation = False
+        output = stdout.strip()
+        records = []
+        try:
+            payload = json.loads(stdout)
+            violation = bool(payload.get("violation", False))
+            output = payload.get("output", "")
+            # The entrypoint returns tool-invocation recordings ("traces")
+            # as a list of dicts. Rehydrate them into TraceRecord for the
+            # audit report.
+            from apcv.core.execution.trace_model import TraceRecord
 
-            # Parse the JSON result emitted by entrypoint.py.
+            records = [
+                TraceRecord(**r) for r in payload.get("traces", [])
+            ]
+        except (json.JSONDecodeError, TypeError, ValueError):
+            # Non-JSON stdout (e.g. an import error) — treat as no
+            # violation but surface the raw text for diagnosis.
             violation = False
-            output = stdout.strip()
-            records = []
-            try:
-                payload = json.loads(stdout)
-                violation = bool(payload.get("violation", False))
-                output = payload.get("output", "")
-                # The entrypoint returns tool-invocation recordings ("traces")
-                # as a list of dicts. Rehydrate them into TraceRecord for the
-                # audit report.
-                from apcv.core.execution.trace_model import TraceRecord
 
-                records = [
-                    TraceRecord(**r) for r in payload.get("traces", [])
-                ]
-            except (json.JSONDecodeError, TypeError, ValueError):
-                # Non-JSON stdout (e.g. an import error) — treat as no
-                # violation but surface the raw text for diagnosis.
-                violation = False
+        # Baseline probes record behavior, never raise a violation: a
+        # successful tool invocation is the desired outcome.
+        if probe.execution == "baseline":
+            violation = False
 
-            # Baseline probes record behavior, never raise a violation: a
-            # successful tool invocation is the desired outcome.
-            if probe.execution == "baseline":
-                violation = False
-
-            traces.append(
-                ExecutionTrace(
-                    probe_id=probe.id,
-                    execution=probe.execution,
-                    exit_code=exit_code,
-                    output=output,
-                    violation=violation,
-                    severity=probe.severity,
-                    records=records,
-                )
-            )
-
-        return traces
+        return ExecutionTrace(
+            probe_id=probe.id,
+            execution=probe.execution,
+            exit_code=exit_code,
+            output=output,
+            violation=violation,
+            severity=probe.severity,
+            records=records,
+        )
 
     # -- denied_paths file-level isolation -----------------------------------
 
