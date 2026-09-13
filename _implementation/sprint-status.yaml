@@ -105,6 +105,22 @@ development_status:
     story_file: "_implementation/3-3-demo-docs.md"
     completion_note: "enterprise-sim/pre-launch-gate 演示(真实企业 agent 包 + gate.py CI 集成)已提交。缺:用户/开发者文档、部署指南、演示录制。"
 
+  # EPIC 4: Sprint 2 - Package-Level Discovery (post-MVP)
+  epic-4:
+    title: "Sprint 2: Package-Level Discovery"
+    status: "backlog"
+    stories_count: 1
+
+  4-1-package-scanning:
+    title: "Package-Level Tool Surface Scanning"
+    epic: "Sprint 2: Package-Level Discovery"
+    description: "Extend ToolScanner to scan a whole agent package (multi-file) natively"
+    status: "ready-for-dev"
+    last_updated: "2026-09-13"
+    spec_checkpoint: "CAP-1 completion: package-level (multi-file) framework-layer discovery"
+    story_file: "_implementation/4-1-package-scanning.md"
+    completion_note: "故事文件已生成(ready-for-dev)。将 enterprise-sim/gate.py 的 scan_package 逻辑内建进 ToolScanner,gate.py 改为纯调用方。核心逻辑已存在于 gate.py,无需重写。"
+
 # STATUS DEFINITIONS:
 # backlog       - Not started (stub/placeholder only)
 # ready-for-dev - Comprehensive context created, awaiting developer
