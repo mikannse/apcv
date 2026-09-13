@@ -120,23 +120,33 @@ def validate(
         report_path = _write_report(sbom, policy_obj, probes, result, execution_traces, agent)
         typer.echo(f"📁 Report saved to {report_path}", err=True)
 
-        # Output results
+        # Output results (json / sarif / html)
+        report = {
+            "verdict": result.verdict,
+            "compliance_score": score,
+            "tools_discovered": len(sbom.tools),
+            "probes_generated": len(probes),
+            "probes_executed": len(execution_traces),
+            "report_path": str(report_path),
+            "agent_path": str(Path(agent).absolute()),
+            "policy_name": policy_obj.metadata.name,
+            "violations": [
+                {"type": v.type, "description": v.description, "severity": v.severity}
+                for v in result.violations
+            ],
+        }
+
+        from apcv.cli.output import format_json, format_sarif, format_html
+
         if output == "json":
-            report = {
-                "verdict": result.verdict,
-                "compliance_score": score,
-                "tools_discovered": len(sbom.tools),
-                "probes_generated": len(probes),
-                "probes_executed": len(execution_traces),
-                "report_path": str(report_path),
-                "violations": [
-                    {"type": v.type, "description": v.description}
-                    for v in result.violations
-                ],
-            }
-            typer.echo(json.dumps(report, indent=2))
+            typer.echo(format_json(report))
+        elif output == "sarif":
+            typer.echo(format_sarif(report))
+        elif output == "html":
+            typer.echo(format_html(report))
         else:
             typer.echo(f"Output format {output} not yet implemented", err=True)
+            raise typer.Exit(code=2)
 
         exit_code = 0 if score >= 95 else (1 if score >= 70 else 2)
 
