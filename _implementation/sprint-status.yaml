@@ -126,11 +126,11 @@ development_status:
     title: "MCP Tool Surface Discovery"
     epic: "Sprint 2: Package-Level Discovery"
     description: "Discover tools declared via MCP (Model Context Protocol) adapters/configuration"
-    status: "ready-for-dev"
+    status: "done"
     last_updated: "2026-09-13"
     spec_checkpoint: "CAP-1 第②层:MCP 工具面发现(静态前置:端点清单)"
     story_file: "_implementation/4-2-mcp-discovery.md"
-    completion_note: "故事文件已生成(ready-for-dev)。走路线 A 纯静态:解析 MCP 连接声明(MultiServerMCPClient/MCPAdapter)产出端点清单进 SBOM.mcp_servers,不枚举工具(运行时 list_tools 属路线 B)。"
+    completion_note: "完成(路线 A 纯静态)。MCPServer 模型 + SBOM.mcp_servers + extract_mcp_servers() 识别 MultiServerMCPClient/MCPAdapter;变量引用记录为 unresolved 不静默忽略。scan()/scan_package() 均产出端点。6 个新测试,79 全量通过。工具枚举(runtime list_tools)明确为路线 B,不在本故事。"
 
   4-4-subagent-inheritance:
     title: "Sub-Agent Tool Inheritance Discovery"
