@@ -28,33 +28,20 @@ from apcv.core.scanners.tool_scanner import ToolScanner
 from apcv.core.frameworks.langgraph_adapter import LangGraphAdapter
 from apcv.core.policy.validator import PolicyValidator
 from apcv.core.conformance import ConformanceResult
-from apcv.core.utils.sbom import create_empty_sbom
 
 
 def scan_package(pkg_dir: Path):
-    """Scan every .py file under pkg_dir and merge into one SBOM."""
+    """Scan every .py file under pkg_dir and merge into one SBOM.
+
+    Thin wrapper over the built-in ToolScanner.scan_package() (story 4.1).
+    Returns (sbom, n_files) for the report's `files_scanned` field.
+    """
     scanner = ToolScanner()
     adapter = LangGraphAdapter()
-    sbom = create_empty_sbom(str(pkg_dir), framework="langgraph")
-    seen_names = set()
-    py_files = sorted(pkg_dir.rglob("*.py"))
-    for py in py_files:
-        # skip tests and virtualenv/dunder dirs
-        if any(part in ("tests", "__pycache__") for part in py.parts):
-            continue
-        try:
-            partial = scanner.scan(str(py), adapter)
-        except (SyntaxError, ValueError, UnicodeDecodeError):
-            continue
-        rel = py.relative_to(pkg_dir)
-        for tool in partial.tools:
-            # skip re-exports already seen (tools/__init__.py imports modules)
-            if tool.name in seen_names:
-                continue
-            seen_names.add(tool.name)
-            tool.module = str(rel.as_posix())  # attribute the source file
-            sbom.tools.append(tool)
-    return sbom, len(py_files)
+    sbom = scanner.scan_package(str(pkg_dir), adapter)
+    n_files = len([p for p in sorted(pkg_dir.rglob("*.py"))
+                   if not any(part in ("tests", "__pycache__") for part in p.parts)])
+    return sbom, n_files
 
 
 def main(argv=None) -> int:

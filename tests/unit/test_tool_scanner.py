@@ -92,3 +92,88 @@ def test_scanner_json_export(scanner, adapter, simple_agent):
         assert sbom.version in json_str
     finally:
         Path(path).unlink()
+
+
+# ---------------------------------------------------------------------------
+# scan_package tests (story 4.1)
+# ---------------------------------------------------------------------------
+
+TOOL_MODULE = '''from langchain_core.tools import tool
+
+@tool
+def {name}(x: str) -> str:
+    """{doc}"""
+    return x
+'''
+
+
+def _write_pkg(tmp_path, structure):
+    """Write a dict of {relpath: content} into tmp_path, return the root."""
+    for relpath, content in structure.items():
+        p = tmp_path / relpath
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content, encoding="utf-8")
+    return tmp_path
+
+
+def test_scan_package_multiple_files(scanner, adapter, tmp_path):
+    """Package scan discovers tools across multiple modules."""
+    _write_pkg(tmp_path, {
+        "agent.py": TOOL_MODULE.format(name="search", doc="search docs"),
+        "tools/crm.py": TOOL_MODULE.format(name="get_customer", doc="get crm"),
+    })
+    sbom = scanner.scan_package(str(tmp_path), adapter)
+
+    assert {t.name for t in sbom.tools} == {"search", "get_customer"}
+    assert sbom.agent_path == str(tmp_path.resolve())
+
+
+def test_scan_package_attributes_source_module(scanner, adapter, tmp_path):
+    """Each tool's module field carries the package-relative source path."""
+    _write_pkg(tmp_path, {
+        "tools/crm.py": TOOL_MODULE.format(name="get_customer", doc="c"),
+        "tools/sub/nested.py": TOOL_MODULE.format(name="deep_tool", doc="d"),
+    })
+    sbom = scanner.scan_package(str(tmp_path), adapter)
+
+    modules = {t.name: t.module for t in sbom.tools}
+    assert modules["get_customer"] == "tools/crm.py"
+    assert modules["deep_tool"] == "tools/sub/nested.py"
+
+
+def test_scan_package_dedupes_reexports(scanner, adapter, tmp_path):
+    """tools/__init__.py re-exporting a tool must not duplicate it."""
+    _write_pkg(tmp_path, {
+        "tools/crm.py": TOOL_MODULE.format(name="get_customer", doc="c"),
+        # __init__.py imports the same name (re-export); AST sees a Name, not a
+        # @tool def, so no duplicate here — but a duplicate @tool in two files
+        # with the same name should be deduped.
+        "tools/dup.py": TOOL_MODULE.format(name="get_customer", doc="dup"),
+    })
+    sbom = scanner.scan_package(str(tmp_path), adapter)
+
+    names = [t.name for t in sbom.tools]
+    assert names.count("get_customer") == 1
+
+
+def test_scan_package_skips_tests_and_pycache(scanner, adapter, tmp_path):
+    """tests/ and __pycache__ dirs are skipped."""
+    _write_pkg(tmp_path, {
+        "agent.py": TOOL_MODULE.format(name="real_tool", doc="r"),
+        "tests/test_x.py": TOOL_MODULE.format(name="test_tool", doc="t"),
+        "__pycache__/junk.py": TOOL_MODULE.format(name="cache_tool", doc="c"),
+    })
+    sbom = scanner.scan_package(str(tmp_path), adapter)
+
+    assert {t.name for t in sbom.tools} == {"real_tool"}
+
+
+def test_scan_package_tolerates_bad_file(scanner, adapter, tmp_path):
+    """A file with a syntax error is skipped, not fatal."""
+    _write_pkg(tmp_path, {
+        "agent.py": TOOL_MODULE.format(name="good_tool", doc="g"),
+        "broken.py": "def this is not valid python !!!",
+    })
+    sbom = scanner.scan_package(str(tmp_path), adapter)
+
+    assert {t.name for t in sbom.tools} == {"good_tool"}
