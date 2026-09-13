@@ -109,8 +109,8 @@ development_status:
   epic-4:
     title: "Sprint 2: Package-Level Discovery"
     status: "backlog"
-    stories_count: 1
-    scope_note: "CAP-1 完整定义是'四层发现'(框架/MCP/运行时/子Agent)。本 epic 当前只规划了第①层(框架层)的多文件扫描(story 4.1)。第②③④层(MCP manifest / 运行时内建工具 / 子Agent 继承)尚未拆解为故事,待技术调研后新增 story 4.2/4.3/4.4。"
+    stories_count: 3
+    scope_note: "CAP-1 完整定义是'四层发现'(框架/MCP/运行时/子Agent)。本 epic 规划 3 个故事:4.1 框架层多文件、4.2 MCP 工具面、4.4 子Agent 继承。第③层'运行时内建'经调研确认:裸 LangGraph 无隐式运行时工具(工具必须显式 bind_tools/ToolNode),deepagents 等高层框架的 middleware 注入工具(如 FilesystemMiddleware)属框架层变体——不单独立 story,在故事文档中说明。"
 
   4-1-package-scanning:
     title: "Package-Level Tool Surface Scanning"
@@ -121,6 +121,29 @@ development_status:
     spec_checkpoint: "CAP-1 第①层(框架层)补全:多文件/包级发现"
     story_file: "_implementation/4-1-package-scanning.md"
     completion_note: "故事文件已生成(ready-for-dev)。将 enterprise-sim/gate.py 的 scan_package 逻辑内建进 ToolScanner,gate.py 改为纯调用方。核心逻辑已存在于 gate.py,无需重写。注意:此故事仅覆盖四层中的'框架层',不包含 MCP/运行时/子Agent 三层。"
+
+  4-2-mcp-discovery:
+    title: "MCP Tool Surface Discovery"
+    epic: "Sprint 2: Package-Level Discovery"
+    description: "Discover tools declared via MCP (Model Context Protocol) adapters/configuration"
+    status: "backlog"
+    last_updated: "2026-09-13"
+    spec_checkpoint: "CAP-1 第②层:MCP 工具面发现"
+    story_file: "_implementation/4-2-mcp-discovery.md"
+    completion_note: "待拆解。调研结论:LangChain v1.4.0 起 MCP 支持内建在 langchain.mcp 命名空间(替代 langchain-mcp-adapters),MCPAdapter.list_tools() 返回带 mcp 命名空间 metadata 的 LangChain 工具。解析 agent 的 MCP 配置/连接,枚举其工具面并入 SBOM。"
+
+  4-4-subagent-inheritance:
+    title: "Sub-Agent Tool Inheritance Discovery"
+    epic: "Sprint 2: Package-Level Discovery"
+    description: "Discover tools inherited through sub-agent delegation chains"
+    status: "backlog"
+    last_updated: "2026-09-13"
+    spec_checkpoint: "CAP-1 第④层:子 Agent 工具继承发现"
+    story_file: "_implementation/4-4-subagent-inheritance.md"
+    completion_note: "待拆解。调研结论:LangGraph create_agent 把子 agent 包成 wrapper 工具(如 ask_fruit_expert),父通过 wrapper 委派;工具面是嵌套的。识别 wrapper→子agent→子agent 自己的 tools 的递归链,并入 SBOM。"
+
+  # 第③层'运行时内建'不单独立 story —— 见 epic-4.scope_note
+
 
 # STATUS DEFINITIONS:
 # backlog       - Not started (stub/placeholder only)

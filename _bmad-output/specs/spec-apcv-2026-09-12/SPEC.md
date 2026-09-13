@@ -71,13 +71,13 @@ open_questions:
 
 | 能力 | 状态 | 实际 vs 计划 |
 |---|---|---|
-| CAP-1 工具面发现 | ⚠️ 部分 | 仅框架层**单文件** AST 发现;四层中的 MCP/运行时/子Agent 三层未做;多文件包级扫描靠 enterprise-sim/gate.py 薄集成 |
+| CAP-1 工具面发现 | ⚠️ 部分 | 四层规划:①框架层多文件=story 4.1(ready);②MCP=story 4.2;③运行时内建(裸 LangGraph 无隐式工具,deepagents middleware 属框架层变体,不单独立);④子Agent 继承=story 4.4。当前仅框架层单文件已实现 |
 | CAP-2 策略相对型探针 | ⚠️ 部分 | 生成机制完成,但探针库经重构**收敛为 7 条**(tool 4 + rate_limit 3),低于"≥15 条"门槛 |
 | CAP-3 隔离执行+参数追踪 | ⚠️ 部分 | Docker 隔离 + wrapt 追踪 + ProbeHost + JSONL 轨迹 + 并行**已实现**;<1% 开销从未测量;沙箱定位修正(见设计偏离) |
 | CAP-4 一致性+差异报告 | ⚠️ 部分 | 一致性检查完成;缺 **Markdown 报告**和每条违规的**修复提示** |
 | CAP-5 CLI + Web UI | ⚠️ 部分 | **CLI 完整**(json/sarif/html);**Web UI 未实现**(backend 为硬编码假数据,无前端) |
 | CAP-6 监管级报告 | ❌ 未完成 | 仅 JSON + trace;**PDF 导出、数字签名**未做 |
-| CAP-7 LangGraph 端到端 | ⚠️ 部分 | 发现→生成→执行→追踪主链路通;缺"运行时能力发现"、缺真多文件 agent 直接支持 |
+| CAP-7 LangGraph 端到端 | ⚠️ 部分 | 发现→生成→执行→追踪主链路通;缺"运行时能力发现"、缺真多文件 agent 直接支持(依赖 story-9 包级扫描) |
 
 ### 设计偏离(2026-09-13 关键修正)
 
