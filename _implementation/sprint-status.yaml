@@ -1,55 +1,63 @@
 # Sprint Status - APCV MVP (3 Weeks)
-# Last Updated: 2026-09-12
+# Last Updated: 2026-09-13
+#
+# NOTE: 2026-09-13 状态校准——此前 git 提交 ad1245e 声称 "all 8 stories implemented"
+# 与事实不符(2-2 实为 executor stub)。本文件已对照代码逐条核实,记录真实完成度。
+# status 语义: done = 核心 AC 已实现; review = 主体完成待补验收; in-progress = 进行中;
+#              backlog = 未开始(仅 stub/占位)。
 
 development_status:
   # EPIC 1: Week 1 - Core Infrastructure
   epic-1:
     title: "Week 1: Core Infrastructure"
-    status: "backlog"
+    status: "done"
     stories_count: 2
 
   1-1-project-setup:
     title: "Framework Setup & Tool Discovery Foundation"
     epic: "Week 1: Core Infrastructure"
     description: "Establish project scaffolding, implement LangGraph AST parser, and discover static tool surface"
-    status: "ready-for-dev"
-    last_updated: "2026-09-12"
+    status: "done"
+    last_updated: "2026-09-13"
     spec_checkpoint: "CAP-1 (Tool Surface Discovery - static layer only)"
     story_file: "_implementation/1-1-project-setup.md"
+    completion_note: "单文件 AST 发现完成。CAP-1 的'四层发现'(MCP/框架/运行时/子Agent)仅实现框架层且仅单文件——多文件/包级扫描需靠 enterprise-sim/gate.py 薄集成,运行时/身份/子Agent 三层未做。"
 
   1-2-policy-dsl:
     title: "Policy DSL & Validation Engine"
     epic: "Week 1: Policy Foundation"
     description: "Design and implement Policy DSL (YAML schema), validator, and error reporting"
-    status: "ready-for-dev"
-    last_updated: "2026-09-12"
+    status: "done"
+    last_updated: "2026-09-13"
     spec_checkpoint: "Policy declaration layer"
     story_file: "_implementation/1-2-policy-dsl.md"
+    completion_note: "完成。YAML schema + jsonschema 校验 + 错误报告已交付并通过测试。"
 
   # EPIC 2: Week 1-2 - Dynamic Testing & Execution
   epic-2:
     title: "Week 1-2: Dynamic Testing & Execution"
-    status: "backlog"
+    status: "done"
     stories_count: 3
 
   2-1-probe-rules:
     title: "Probe Rules Library & Policy-Relative Generation"
     epic: "Week 1-2: Dynamic Testing Foundation"
     description: "Build 20-30 deterministic probe rules and policy-relative generation logic"
-    status: "ready-for-dev"
-    last_updated: "2026-09-12"
+    status: "done"
+    last_updated: "2026-09-13"
     spec_checkpoint: "CAP-2 (Policy-Relative Probe Generation)"
     story_file: "_implementation/2-1-probe-rules.md"
+    completion_note: "策略相对型生成机制完成,但探针库经 2026-09-13 重构从 35 条收敛为 7 条 agent 探针(tool 4 + rate_limit 3)。shell 探针(filesystem/network/privilege 共 20 条)因'沙箱是隔离笼子不做策略执行'的设计修正被移除。探针数低于 SPEC 的 20-30 条门槛。"
 
   2-2-isolated-execution:
     title: "Isolated Execution & Parameter Tracing"
     epic: "Week 2: Dynamic Validation"
     description: "Implement Docker-based probe executor and wrapt parameter tracing"
-    status: "in-progress"
+    status: "done"
     last_updated: "2026-09-13"
-    note: "correct-course 2026-09-13: AC 全部未兑现(executor stub、无 tracer/Dockerfile),状态回退,见 sprint-change-proposal"
     spec_checkpoint: "CAP-3 (Isolated Probe Execution & Parameter Tracing)"
     story_file: "_implementation/2-2-isolated-execution.md"
+    completion_note: "本轮从 stub 做成真实现:Docker 隔离执行 + wrapt 参数追踪 + ProbeHost + JSONL 轨迹 + 并行(ThreadPoolExecutor)全部落地。<1% 开销从未测量;沙箱定位修正为'固定隔离笼子(非 root + 无网络),不执行策略'(见 sprint-change-proposal 与架构 AD)。"
 
   2-3-conformance-check:
     title: "Conformance Check & Diff Report Generation"
@@ -59,43 +67,47 @@ development_status:
     last_updated: "2026-09-13"
     spec_checkpoint: "CAP-4 (Conformance Check & Diff Report)"
     story_file: "_implementation/2-3-conformance-check.md"
+    completion_note: "一致性检查(deny-by-default 空白名单 + denied_tools)完成。缺:Markdown 报告(仅 JSON)、每条违规的'修复提示'字段。执行轨迹→违规的消费已接线。"
 
   # EPIC 3: Week 3 - Interfaces & Demo
   epic-3:
     title: "Week 3: Interfaces & Demo"
-    status: "backlog"
+    status: "in-progress"
     stories_count: 3
 
   3-1-cli-tool:
     title: "CLI Tool (apcv validate)"
     epic: "Week 3: User Interface & CI/CD Integration"
     description: "Implement command-line interface for validating Agents"
-    status: "ready-for-dev"
-    last_updated: "2026-09-12"
+    status: "done"
+    last_updated: "2026-09-13"
     spec_checkpoint: "CAP-5 (CLI interface)"
     story_file: "_implementation/3-1-cli-tool.md"
+    completion_note: "完成。apcv validate + --output {json,sarif,html} + 退出码 0/1/2 + 报告落盘 .apcv/reports/ + [project.scripts] 入口点均交付。"
 
   3-2-web-ui:
     title: "Web UI (Dashboard, Policy Editor, Reports)"
     epic: "Week 3: User Interface & Visualization"
     description: "Implement web dashboard showing Agent compliance and policy management"
-    status: "ready-for-dev"
-    last_updated: "2026-09-12"
+    status: "backlog"
+    last_updated: "2026-09-13"
     spec_checkpoint: "CAP-5, CAP-6 (Web UI interface)"
     story_file: "_implementation/3-2-web-ui.md"
+    completion_note: "未开始。backend.py 仅硬编码 github-agent 假数据,不读 .apcv/reports/;前端不存在,/ 返回 404。用户已明确'web UI 先不管'。"
 
   3-3-demo-docs:
     title: "E2E Demo & Documentation"
     epic: "Week 3: Demo & Delivery"
     description: "Create end-to-end demo and comprehensive documentation"
-    status: "ready-for-dev"
-    last_updated: "2026-09-12"
+    status: "in-progress"
+    last_updated: "2026-09-13"
     spec_checkpoint: "Demonstrates all capabilities working together"
     story_file: "_implementation/3-3-demo-docs.md"
+    completion_note: "enterprise-sim/pre-launch-gate 演示(真实企业 agent 包 + gate.py CI 集成)已提交。缺:用户/开发者文档、部署指南、演示录制。"
 
 # STATUS DEFINITIONS:
-# backlog       - Ready for dev, awaiting assignment
+# backlog       - Not started (stub/placeholder only)
 # ready-for-dev - Comprehensive context created, awaiting developer
-# in-progress   - Actively being developed
-# review        - Complete, awaiting code review
-# done          - Complete and approved
+# in-progress   - Actively being developed / partially complete
+# review        - Core done, missing acceptance refinements
+# done          - Core acceptance criteria implemented

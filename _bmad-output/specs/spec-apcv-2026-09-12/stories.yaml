@@ -376,3 +376,27 @@ project_plan: |
   - **最小 MVP**：story-1 + story-2 + story-3 + story-4 + story-5 + story-6（仅 CLI，不含 Web UI）
   - **必要时可舍弃**：Web UI（story-7）可延至 Sprint 2；CLI 对 CI/CD 落地至关重要
   - **尽可能保留**：演示（story-8）对验证与交付至关重要
+
+design_drift: |
+  ## 设计变更注记（2026-09-13 校准）
+
+  对照代码实际状态，以下计划中的 AC 因设计修正与实现取舍发生偏离，
+  记录于此以避免"文档与代码脱节"：
+
+  1. **story-3（探针规则）**: 原 AC 要求 20-30 条探针。经重构收敛为 7 条 agent 探针
+     （tool 4 + rate_limit 3）。shell 探针（filesystem/network/privilege 共 20 条）因
+     "沙箱是隔离笼子、不做策略执行"被移除；悬空探针（tool_import/dynamic/override）
+     因语义不清被移除。探针数量低于原门槛，属有意取舍。
+
+  2. **story-4（隔离执行）**: 原 AC 要求"只读文件系统、禁用网络"。沙箱定位修正为
+     "固定隔离笼子（非 root + 无网络），不按策略执行"。denied_paths/read-only 等
+     限制归部署平台，不由沙箱执行——否则会预先拦截越界行为、摧毁检测能力。
+
+  3. **story-5（一致性检查）**: 原 AC 要求 "JSON + Markdown" 双格式报告及每条违规的
+     修复提示。当前仅 JSON，Markdown 与修复提示未实现。
+
+  4. **story-7（Web UI）**: 未开始，backend 为硬编码假数据。用户明确延后。
+
+  5. **story-1（工具发现）**: 原 CAP-1 要求"四层发现"。仅实现框架层单文件 AST 扫描；
+     多文件包级扫描靠 enterprise-sim/gate.py 薄集成。
+
