@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # apcv execution machinery (probe_host, tracer, trace_model) needs pydantic +
 # wrapt. Install them so entrypoint.py can import apcv inside the container.
-COPY requirements.txt /tmp/requirements.txt
+COPY docker/apcv-probe/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Create a non-root user matching the executor's --user=1000:1000.
