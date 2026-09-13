@@ -2,7 +2,7 @@
 
 **Verify AI Agents comply with declared policies before deployment.**
 
-APCV is a 3-week MVP that validates LangGraph Agents against security and capability policies. It discovers what tools an Agent can call, generates targeted test probes, runs them in isolated environments, and reports policy violations with remediation suggestions.
+APCV is an MVP that validates LangGraph Agents against security and capability policies. It discovers what tools an Agent can call, generates targeted test probes, runs them in isolated environments, and reports policy violations with remediation suggestions.
 
 ## Quick Start
 
