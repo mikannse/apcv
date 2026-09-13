@@ -116,11 +116,11 @@ development_status:
     title: "Package-Level Tool Surface Scanning"
     epic: "Sprint 2: Package-Level Discovery"
     description: "Extend ToolScanner to scan a whole agent package (multi-file) natively"
-    status: "ready-for-dev"
+    status: "done"
     last_updated: "2026-09-13"
     spec_checkpoint: "CAP-1 第①层(框架层)补全:多文件/包级发现"
     story_file: "_implementation/4-1-package-scanning.md"
-    completion_note: "故事文件已生成(ready-for-dev)。将 enterprise-sim/gate.py 的 scan_package 逻辑内建进 ToolScanner,gate.py 改为纯调用方。核心逻辑已存在于 gate.py,无需重写。注意:此故事仅覆盖四层中的'框架层',不包含 MCP/运行时/子Agent 三层。"
+    completion_note: "完成。ToolScanner.scan_package() 内建包级扫描(复用 scan()、跳过 tests/__pycache__、坏文件降级、按名去重、module 字段标来源);gate.py 改为纯薄壳调用。5 个新单元测试 + 73 全量测试通过 + gate.py 对真实包扫描出 9 个工具。"
 
   4-2-mcp-discovery:
     title: "MCP Tool Surface Discovery"

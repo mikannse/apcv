@@ -102,10 +102,22 @@ def test_scan_package(tmp_path, scanner, adapter):
 
 ### Agent Model Used
 
-（待 dev-story 填充）
+Claude Code (MiniMax-M2.7-highspeed)
 
 ### Debug Log References
 
+无
+
 ### Completion Notes List
 
+- TDD 流程:先写 5 个单元测试(红)→ 实现 `scan_package()`(绿)→ 重构 gate.py
+- 复用 `scan()` 逐文件扫描,未重写 AST 逻辑;单文件路径向后兼容
+- `module` 字段承载来源路径,未新增字段
+- gate.py 删除本地 20 行 scan_package 逻辑 + 未用的 `create_empty_sbom` import
+- 全量 73 测试通过;gate.py 对 customer-support-bot 真实包扫描出 9 个工具,来源标注正确
+
 ### File List
+
+- apcv/core/scanners/tool_scanner.py (新增 scan_package 方法)
+- enterprise-sim/pre-launch-gate/gate.py (重构为薄壳)
+- tests/unit/test_tool_scanner.py (新增 5 个包级扫描测试)
