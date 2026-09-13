@@ -207,5 +207,5 @@ apcv/
 - **运行时监控模式（Runtime Monitoring Mode）**: MVP 仅做部署前验证。持续运行时监控延后至 Sprint 2+。
 - **合规报告自动化**: MVP 中 SBOM/审计证明为手动生成。自动化合规映射（NIST、EU AI Act、ISO）延后至 Sprint 2。
 - **高安全沙箱**: MVP 使用 Docker（操作系统级隔离）。gVisor（系统调用过滤）、Firecracker（微虚拟机）针对高风险 Agent 延后至 Sprint 2。
-  - **目录级 denied_paths 读隔离**: 当前仅实现文件级（空文件 bind mount）。目录级（如 `/etc`、`/root`）无法用 Docker bind mount 干净遮蔽而不破坏容器运行，需要 seccomp/gVisor 的系统调用过滤。此为 Sprint 2 高安全沙箱的直接前置项（2026-09-13 记录）。
+  - **沙箱定位（2026-09-13 修正）**: 沙箱是**固定隔离笼子**（非 root + 无网络），**不执行策略**。denied_paths / read-only / 断网等限制属于部署平台的强制职责，APCV 不通过沙箱去"预先拦截"——否则会掩盖 Agent 的真实越界行为，摧毁检测能力。越界检测由 agent 探针观察真实工具行为完成，而非由沙箱拦截。gVisor/Firecracker 的价值在于**更强的隔离强度**（防止逃逸污染宿主机），而非**更细的策略执行**。
 - **水平扩展**: MVP 为单进程。分布式执行与云部署延后至生产阶段。
