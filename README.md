@@ -7,53 +7,52 @@ APCV is a 3-week MVP that validates LangGraph Agents against security and capabi
 ## Quick Start
 
 ```bash
-# Install (from the project root)
-pip install -e .
+# Install dependencies (uv-managed virtualenv)
+uv sync
 
 # Validate an Agent against a policy
-apcv validate --agent tests/fixtures/sample_agents/simple_agent.py \
-              --policy tests/fixtures/policies/read_only.yaml
+uv run apcv validate --agent tests/fixtures/sample_agents/simple_agent.py \
+                     --policy tests/fixtures/policies/read_only.yaml
 
 # View results in Web UI (FastAPI dashboard at http://127.0.0.1:8000)
-apcv web
+uv run apcv web
 ```
 
-## Features (MVP - Week 1-3)
+## Features
 
-- **Tool Discovery**: Automatically find all `@tool` decorators in LangGraph Agents
-- **Policy DSL**: Declare capabilities and boundaries in YAML
-- **Probe Generation**: Create 20-30 security test cases based on policy
-- **Isolated Execution**: Run probes in Docker containers safely
+- **Tool Surface Discovery (四层)**: 框架层 `@tool`(单文件 + 包级 `scan_package`)、MCP 端点清单、子 Agent 工具面枚举
+- **Policy DSL**: Declare capabilities and boundaries in YAML (deny-by-default)
+- **Probe Execution**: 策略相对型 agent 探针 + baseline 审计探针,在隔离 Docker 沙箱中执行
+- **Parameter Tracing**: wrapt 记录每次工具调用的参数,产出审计证据 (JSONL)
 - **Conformance Checking**: Compare Agent behavior against declared policy
-- **CLI Tool**: Single `apcv validate` command
-- **Web UI**: Dashboard with compliance scores and detailed reports
+- **CLI Tool**: `apcv validate --output json|sarif|html`
+- **Web UI**: FastAPI dashboard (stub — 尚未接真实报告数据)
 
 ## Project Structure
 
 ```
 apcv/
 ├── core/
-│   ├── scanners/          # Tool discovery
-│   ├── frameworks/        # Framework adapters
+│   ├── scanners/          # Tool discovery (single-file + package-level)
+│   ├── frameworks/        # Framework adapters (LangGraph)
 │   ├── policy/            # Policy DSL & validation
-│   ├── probes/            # Test probes
-│   ├── execution/         # Execution engine
-│   └── utils/             # Shared utilities
+│   ├── probes/            # Test probes (agent + baseline)
+│   ├── execution/         # Sandbox executor + tracer + ProbeHost
+│   └── utils/             # SBOM data models
 │
-├── cli/                    # CLI interface
-├── web/                    # Web UI (FastAPI + React)
+├── cli/                    # CLI interface (validate / web)
+├── web/                    # FastAPI backend (stub)
 ├── tests/                  # Test suite
-├── docs/                   # Documentation
-└── docker/                 # Docker images
+└── docker/                 # apcv-probe sandbox image
 ```
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Policy DSL](docs/POLICY_DSL.md)
-- [Probe Rules](docs/PROBE_RULES.md)
-- [API Reference](docs/API.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
+- [架构主干](_bmad-output/architecture/architecture-apcv-2026-09-12/ARCHITECTURE-SPINE.md)
+- [产品规格 (SPEC)](_bmad-output/specs/spec-apcv-2026-09-12/SPEC.md)
+- [Policy DSL Schema](_bmad-output/specs/spec-apcv-2026-09-12/policy-dsl-schema.md)
+- [探针规则](_bmad-output/specs/spec-apcv-2026-09-12/probe-rules.md)
+- [Sprint 状态](_implementation/sprint-status.yaml)
 
 ## License
 
