@@ -136,11 +136,11 @@ development_status:
     title: "Sub-Agent Tool Inheritance Discovery"
     epic: "Sprint 2: Package-Level Discovery"
     description: "Discover tools inherited through sub-agent delegation chains"
-    status: "backlog"
+    status: "done"
     last_updated: "2026-09-13"
-    spec_checkpoint: "CAP-1 第④层:子 Agent 工具继承发现"
+    spec_checkpoint: "CAP-1 第④层:子 Agent 工具继承发现(静态可靠子集:声明枚举)"
     story_file: "_implementation/4-4-subagent-inheritance.md"
-    completion_note: "待拆解。调研结论:LangGraph create_agent 把子 agent 包成 wrapper 工具(如 ask_fruit_expert),父通过 wrapper 委派;工具面是嵌套的。识别 wrapper→子agent→子agent 自己的 tools 的递归链,并入 SBOM。"
+    completion_note: "完成(静态可靠子集)。SubAgent 模型 + SBOM.sub_agents + extract_subagents() 枚举所有 create_agent(tools=[...]) 声明及工具列表;变量引用标 unresolved。不做 who-invokes-whom 继承链追踪(隐式、静态不可靠)。6 个新测试,85 全量通过。"
 
   # 第③层'运行时内建'不单独立 story —— 见 epic-4.scope_note
 
