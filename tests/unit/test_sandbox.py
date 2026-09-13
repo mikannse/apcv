@@ -1,5 +1,11 @@
 """Tests for sandbox config translation (pure function, no Docker needed)."""
-from apcv.core.execution.sandbox import build_sandbox_config, build_docker_run_args, DEFAULT_USER
+from apcv.core.execution.sandbox import (
+    build_sandbox_config,
+    build_docker_run_args,
+    classify_denied_paths,
+    build_denied_file_mounts,
+    DEFAULT_USER,
+)
 from apcv.core.policy.schema import Policy, Metadata
 
 
@@ -65,3 +71,32 @@ def test_docker_run_args_network_enabled_uses_bridge():
     assert "--network=bridge" in args
     assert "--network=none" not in args
     assert "--read-only" not in args
+
+
+def test_classify_denied_paths_splits_files_and_dirs():
+    policy = _policy({"filesystem": {
+        "denied_paths": ["/etc/passwd", "/etc/shadow", "/etc", "/root", "/home/u/.aws/credentials"]
+    }})
+    files, dirs = classify_denied_paths(policy)
+    assert files == ["/etc/passwd", "/etc/shadow", "/home/u/.aws/credentials"]
+    assert dirs == ["/etc", "/root"]
+
+
+def test_classify_known_sensitive_files_without_extension():
+    policy = _policy({"filesystem": {"denied_paths": ["/etc/shadow", "/etc/sudoers"]}})
+    files, dirs = classify_denied_paths(policy)
+    assert files == ["/etc/shadow", "/etc/sudoers"]
+    assert dirs == []
+
+
+def test_build_denied_file_mounts_only_includes_files():
+    policy = _policy({"filesystem": {
+        "denied_paths": ["/etc/passwd", "/etc"]
+    }})
+    mounts = build_denied_file_mounts(policy)
+    assert mounts == ["<EMPTY>:/etc/passwd:ro"]
+
+
+def test_build_denied_file_mounts_empty_when_no_denied_paths():
+    policy = _policy({"filesystem": {"read_only": True}})
+    assert build_denied_file_mounts(policy) == []

@@ -42,9 +42,13 @@ def executor():
 def test_execute_benign_command_succeeds(executor):
     """A `true` command exits 0; since this probe is framed as a boundary
     attempt, success is recorded as a violation (sandbox did not block it).
+
+    Uses the privilege category (not filesystem) because filesystem probes
+    have a special rule: empty output after a denied-file mount is NOT a
+    violation (isolation held, no content leaked).
     """
     trace = executor.execute_probe(
-        _probe(test_command="true"),
+        _probe(test_command="true", category="privilege"),
         _policy(),
     )
     assert trace.exit_code == 0

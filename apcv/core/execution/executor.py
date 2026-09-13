@@ -129,7 +129,12 @@ class IsolatedExecutor:
             ["-c", probe.test_command],
             entrypoint="/bin/sh",
         )
+        # File-level denied_paths isolation: bind-mount an empty file over each
+        # denied file so a read returns nothing. Directory-level denial is
+        # deferred to seccomp (Sprint 2).
+        empty_file, cleanup = self._denied_file_mount_source(policy)
         try:
+            args = self._insert_denied_mounts(args, policy, empty_file)
             result = subprocess.run(
                 [self.docker_bin, *args],
                 capture_output=True,
@@ -144,12 +149,19 @@ class IsolatedExecutor:
                 output="probe timed out",
                 violation=False,
             )
+        finally:
+            cleanup()
 
         output = (result.stdout + result.stderr).decode(errors="replace")
         exit_code = result.returncode
         # A shell probe that succeeded means the sandbox failed to block the
-        # boundary-violation attempt.
-        violation = exit_code == 0
+        # boundary-violation attempt. For filesystem reads, an empty output
+        # means the denied path was blanked by a file-level mount (isolation
+        # held) rather than a real content leak.
+        if probe.category == "filesystem":
+            violation = exit_code == 0 and bool(output.strip())
+        else:
+            violation = exit_code == 0
 
         return ExecutionTrace(
             probe_id=probe.id,
@@ -298,6 +310,47 @@ class IsolatedExecutor:
             )
 
         return traces
+
+    # -- denied_paths file-level isolation -----------------------------------
+
+    def _denied_file_mount_source(self, policy: Policy):
+        """Return (empty_file_path, cleanup_callable) for denied-file mounts.
+
+        Returns (None, noop) when there are no file-level denied paths.
+        """
+        from apcv.core.execution.sandbox import build_denied_file_mounts
+
+        if not build_denied_file_mounts(policy):
+            return None, lambda: None
+
+        import tempfile
+
+        fd, path = tempfile.mkstemp(suffix=".empty", prefix="apcv_denied_")
+        os.close(fd)
+
+        def cleanup():
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+        return path, cleanup
+
+    def _insert_denied_mounts(self, args, policy, empty_file):
+        """Insert `-v <empty>:<path>:ro` args before the image name."""
+        from apcv.core.execution.sandbox import build_denied_file_mounts
+
+        if empty_file is None:
+            return args
+
+        specs = build_denied_file_mounts(policy)
+        idx = args.index(self.image)
+        for spec in specs:
+            _, container_path, mode = spec.split(":", 2)
+            args.insert(idx, "-v")
+            args.insert(idx + 1, f"{empty_file}:{container_path}:{mode}")
+            idx += 2
+        return args
 
 
 def _project_root() -> str:
