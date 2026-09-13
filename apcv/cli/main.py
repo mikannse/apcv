@@ -142,12 +142,18 @@ def _write_report(sbom, policy_obj, probes, result, execution_traces, agent_path
     agent_name = Path(agent_path).stem
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
+    # Collect tool-invocation recordings from all agent probes (audit evidence).
+    records = []
+    for trace in execution_traces:
+        records.extend(trace.records)
+
     report = ExecutionReport(
         agent_path=str(Path(agent_path).absolute()),
         policy_name=policy_obj.metadata.name,
         probes_run=len(execution_traces),
         violations=[t for t in execution_traces if t.violation],
         traces=execution_traces,
+        records=records,
     )
 
     report_path = report_dir / f"{timestamp}_{agent_name}.json"

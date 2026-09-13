@@ -260,11 +260,20 @@ class IsolatedExecutor:
             # Parse the JSON result emitted by entrypoint.py.
             violation = False
             output = stdout.strip()
+            records = []
             try:
                 payload = json.loads(stdout)
                 violation = bool(payload.get("violation", False))
                 output = payload.get("output", "")
-            except json.JSONDecodeError:
+                # The entrypoint returns tool-invocation recordings ("traces")
+                # as a list of dicts. Rehydrate them into TraceRecord for the
+                # audit report.
+                from apcv.core.execution.trace_model import TraceRecord
+
+                records = [
+                    TraceRecord(**r) for r in payload.get("traces", [])
+                ]
+            except (json.JSONDecodeError, TypeError, ValueError):
                 # Non-JSON stdout (e.g. an import error) — treat as no
                 # violation but surface the raw text for diagnosis.
                 violation = False
@@ -277,6 +286,7 @@ class IsolatedExecutor:
                     output=output,
                     violation=violation,
                     severity=probe.severity,
+                    records=records,
                 )
             )
 

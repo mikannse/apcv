@@ -18,6 +18,10 @@ class ExecutionTrace(BaseModel):
     output: str = Field(default="", description="Captured stdout/stderr")
     violation: bool = Field(default=False, description="True if boundary was breached")
     severity: str = Field(default="high", description="Severity if this is a violation")
+    records: List["TraceRecord"] = Field(
+        default_factory=list,
+        description="Tool-invocation recordings captured by the tracer",
+    )
     timestamp: str = Field(
         default_factory=lambda: datetime.utcnow().isoformat()
     )

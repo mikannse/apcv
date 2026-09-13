@@ -69,3 +69,23 @@ def test_parallel_execution_returns_all_traces(executor):
     traces = executor.execute_parallel(probes, _policy())
     assert len(traces) == 2
     assert {t.probe_id for t in traces} == {"p1", "p2"}
+
+
+def test_agent_probe_captures_tool_records(executor):
+    """A tool-calling agent probe produces audit records on the trace."""
+    agent = "tests/fixtures/sample_agents/simple_agent.py"
+    probe = _probe(
+        id="agent_probe_x",
+        category="tool",
+        test_command="agent.call_tool('search_documents', {'query': 'test'})",
+        execution="agent",
+    )
+    traces = executor.execute_agent_probes([probe], agent, _policy())
+
+    assert len(traces) == 1
+    trace = traces[0]
+    assert trace.violation is True  # a real tool was reachable => boundary action succeeded
+    # The audit recording must have been parsed back from the entrypoint.
+    assert len(trace.records) == 1
+    assert trace.records[0].tool == "search_documents"
+    assert trace.records[0].args == {"query": "test"}
