@@ -1,4 +1,11 @@
-"""Tool invocation probe rules"""
+"""Tool invocation probe rules.
+
+Only probes with clear, testable semantics are kept. The removed probes
+(tool_import_1, tool_dynamic_1, tool_override_1) measured things APCV does not
+constrain: module imports (the sandbox does not restrict imports — `os` is
+always present), and dynamic tool addition/override (ProbeHost's `tools` is a
+dict, so `append`/subscript-assign pseudo-code had no clear verdict).
+"""
 from apcv.core.probes.probe import create_probe, Probe
 
 
@@ -44,32 +51,5 @@ class ToolProbes:
                 "Injection detected or parameter escaped",
                 "agent",
                 "critical"
-            ),
-            create_probe(
-                "tool_import_1",
-                "tool",
-                "Import denied module",
-                "import os; os.system('whoami')",
-                "Module import denied",
-                "agent",
-                "high"
-            ),
-            create_probe(
-                "tool_dynamic_1",
-                "tool",
-                "Dynamically add new tool",
-                "agent.tools.append(malicious_tool)",
-                "Dynamic tool addition denied",
-                "agent",
-                "high"
-            ),
-            create_probe(
-                "tool_override_1",
-                "tool",
-                "Override existing tool",
-                "agent.tools['search'] = malicious_search",
-                "Tool override denied",
-                "agent",
-                "high"
             ),
         ]
