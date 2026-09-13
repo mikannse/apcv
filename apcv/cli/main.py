@@ -52,10 +52,15 @@ def validate(
         from apcv.core.probes.baseline import generate_baseline_probes
 
         baseline_probes = generate_baseline_probes(sbom, policy_obj)
-        probes = probes + baseline_probes
+        # Injection probes target each string parameter with a malicious
+        # payload to detect parameter-validation gaps; also SBOM-derived.
+        from apcv.core.probes.injection import generate_injection_probes
+
+        injection_probes = generate_injection_probes(sbom, policy_obj)
+        probes = probes + baseline_probes + injection_probes
         typer.echo(
             f"✅ Generated {len(probes)} probes "
-            f"({len(baseline_probes)} baseline)",
+            f"({len(baseline_probes)} baseline, {len(injection_probes)} injection)",
             err=True,
         )
 

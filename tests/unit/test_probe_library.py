@@ -10,12 +10,12 @@ def library():
 
 def test_library_loads_agent_probes(library):
     """Library holds only agent-category probes (tool + rate_limit)."""
-    # tool (4) + rate_limit (3) = 7 agent probes.
-    assert library.get_total_count() == 7
+    # tool (2) + rate_limit (3) = 5 agent probes.
+    assert library.get_total_count() == 5
 
 
 def test_library_has_only_agent_categories(library):
-    assert len(library.get_probes_by_category("tool")) == 4
+    assert len(library.get_probes_by_category("tool")) == 2
     assert len(library.get_probes_by_category("rate_limit")) == 3
     # Shell categories are gone.
     assert library.get_probes_by_category("filesystem") == []
