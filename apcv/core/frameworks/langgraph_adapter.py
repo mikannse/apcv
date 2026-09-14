@@ -3,6 +3,7 @@ import ast
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from apcv.core.frameworks.adapter import FrameworkAdapter
+from apcv.core.scanners.capability import classify_tool
 from apcv.core.utils.sbom import Tool, ToolParameter, MCPServer, SubAgent
 
 
@@ -215,6 +216,7 @@ class LangGraphAdapter(FrameworkAdapter):
                 module=self._extract_module_path(),
                 parameters=parameters,
                 description=ast.get_docstring(func) or "",
+                capabilities=classify_tool(func),
             )
         except Exception:
             return None

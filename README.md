@@ -2,6 +2,8 @@
 
 **Verify AI Agents comply with declared policies before deployment.**
 
+[English](README.md) | [中文](README.zh-CN.md)
+
 APCV is an MVP that validates LangGraph Agents against security and capability policies. It discovers what tools an Agent can call, generates targeted test probes, runs them in isolated environments, and reports policy violations with remediation suggestions.
 
 ## Quick Start
@@ -20,13 +22,13 @@ uv run apcv web
 
 ## Features
 
-- **Tool Surface Discovery (四层)**: 框架层 `@tool`(单文件 + 包级 `scan_package`)、MCP 端点清单、子 Agent 工具面枚举
+- **Tool Surface Discovery (four-layer)**: framework-level `@tool` (single-file + package-level `scan_package`), MCP endpoint inventory, sub-agent tool surface enumeration
 - **Policy DSL**: Declare capabilities and boundaries in YAML (deny-by-default)
-- **Probe Execution**: 策略相对型 agent 探针 + baseline 审计探针,在隔离 Docker 沙箱中执行
-- **Parameter Tracing**: wrapt 记录每次工具调用的参数,产出审计证据 (JSONL)
+- **Probe Execution**: policy-relative agent probes + baseline audit probes, executed in isolated Docker sandboxes
+- **Parameter Tracing**: wrapt records the arguments of every tool call, producing audit evidence (JSONL)
 - **Conformance Checking**: Compare Agent behavior against declared policy
 - **CLI Tool**: `apcv validate --output json|sarif|html`
-- **Web UI**: FastAPI dashboard (stub — 尚未接真实报告数据)
+- **Web UI**: FastAPI dashboard (stub — not yet wired to real report data)
 
 ## Project Structure
 
@@ -48,11 +50,11 @@ apcv/
 
 ## Documentation
 
-- [架构主干](_bmad-output/architecture/architecture-apcv-2026-09-12/ARCHITECTURE-SPINE.md)
-- [产品规格 (SPEC)](_bmad-output/specs/spec-apcv-2026-09-12/SPEC.md)
+- [Architecture spine](_bmad-output/architecture/architecture-apcv-2026-09-12/ARCHITECTURE-SPINE.md)
+- [Product spec (SPEC)](_bmad-output/specs/spec-apcv-2026-09-12/SPEC.md)
 - [Policy DSL Schema](_bmad-output/specs/spec-apcv-2026-09-12/policy-dsl-schema.md)
-- [探针规则](_bmad-output/specs/spec-apcv-2026-09-12/probe-rules.md)
-- [Sprint 状态](_implementation/sprint-status.yaml)
+- [Probe rules](_bmad-output/specs/spec-apcv-2026-09-12/probe-rules.md)
+- [Sprint status](_implementation/sprint-status.yaml)
 
 ## License
 

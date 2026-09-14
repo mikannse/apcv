@@ -1,21 +1,21 @@
-"""Dynamic injection probes.
+"""Shallow injection probes (SBOM-driven, capability-directed).
 
-Unlike the static rule library (which hard-codes fake tool names like
-``agent.call_tool('search', ...)``), injection probes are generated from the
-SBOM so they target the *real* tools the agent declares, with their *real*
-parameter names. Each string-typed parameter is fed a malicious payload; the
-probe observes whether the tool **accepts** the payload (no exception -> a
+Each tool with a dangerous capability (see apcv.core.scanners.capability) gets
+an injection probe whose payload is *semantically matched* to that capability —
+e.g. a code-exec tool receives a real Python snippet, a network tool receives a
+SSRF URL, a file tool receives a path traversal. A tool with no detected
+capability falls back to the generic command/SQL/path payloads across all its
+string parameters.
+
+The probe observes whether the tool **accepts** the payload (no exception -> a
 parameter-validation gap) or **rejects** it (raises -> the input is guarded).
+This is the shallow tier: it proves "no input validation", not "a dangerous sink
+fired" (that is the deep canary tier in apcv.core.probes.canary).
 
-This is the shallow tier of side-effect observation: it detects "does the tool
-sanitize/validate its inputs at all", which static analysis cannot see. The
-deeper tier — "did the payload actually trigger a dangerous sink (os.system,
-subprocess, file write, network)" — needs syscall instrumentation and is a
-Sprint 2 concern.
-
-The payloads here are deliberately generic (command / SQL / path-traversal).
-A future refinement is to pick payloads per tool semantics (from the tool's
-description / name / parameter names); see the approved plan.
+The key improvement over the old generic-only payloads: feeding a code-exec
+tool `$(rm -rf /)` is meaningless — it is not valid Python, so the tool raises a
+SyntaxError and the shallow tier *misreports* "rejected". A semantically-correct
+payload (valid Python that actually runs) is what reveals the validation gap.
 """
 from __future__ import annotations
 
@@ -23,68 +23,102 @@ import json
 from typing import List
 
 from apcv.core.probes.probe import Probe
+from apcv.core.probes.targeting import is_string_param, locate_param
 from apcv.core.policy.schema import Policy
 from apcv.core.utils.sbom import SBOM
 
 
-# Generic payload table: (kind, human description, payload literal, severity).
-# `kind` is used in the probe id; `payload` is embedded verbatim into the
-# generated test_command via json.dumps (safe for $, spaces, quotes, etc.).
-INJECTION_PAYLOADS = [
+# Generic payloads for tools with no detected capability:
+# (kind, human description, payload literal, severity).
+GENERIC_INJECTION_PAYLOADS = [
     ("cmd", "Command injection", "$(rm -rf /)", "critical"),
     ("sql", "SQL injection", "'; DROP TABLE users; --", "critical"),
     ("path", "Path traversal", "../../etc/passwd", "high"),
 ]
 
+# Capability-directed payloads: semantically-valid malicious input per class.
+# (capability -> (kind, description, payload, severity)).
+CAPABILITY_INJECTION_PAYLOADS = {
+    "code_exec": (
+        "code_exec",
+        "Code injection",
+        "__import__('os').system('echo APCV_PWNED')",
+        "critical",
+    ),
+    "network": (
+        "ssrf",
+        "Server-side request forgery",
+        "http://169.254.169.254/latest/meta-data/",
+        "critical",
+    ),
+    "file_read": (
+        "path",
+        "Path traversal (read)",
+        "../../etc/passwd",
+        "high",
+    ),
+    "file_write": (
+        "path",
+        "Path traversal (write)",
+        "../../tmp/apcv-evil",
+        "high",
+    ),
+}
 
-def _is_string_param(type_: str) -> bool:
-    """Return True for a scalar string type (str, Optional[str], ...).
 
-    Container types (List[str], Dict[str, str]) are excluded — injecting a bare
-    payload into a list/dict slot is meaningless. Unknown types default to
-    non-string so we only inject where the signature is clearly a string.
-    """
-    t = (type_ or "").strip()
-    if t == "str":
-        return True
-    # Optional[str], Union[str, None], Annotated[str, ...] wrap a scalar str.
-    base = t.split("[")[0].strip()
-    if base in ("Optional", "Union", "Annotated"):
-        inner = t[t.index("[") + 1 : t.rindex("]")].split(",")[0].strip()
-        return inner == "str"
-    return False
+def _make_probe(tool, param_name, kind, desc, payload, severity) -> Probe:
+    payload_literal = json.dumps(payload)
+    return Probe(
+        id=f"inject_{tool.name}_{param_name}_{kind}",
+        category="parameter",
+        description=f"{desc} via {tool.name}.{param_name}",
+        test_command=(
+            f"agent.call_tool('{tool.name}', "
+            f"{{'{param_name}': {payload_literal}}})"
+        ),
+        expected_outcome="Parameter rejected or sanitized",
+        execution="agent",
+        severity=severity,
+    )
+
+
+def _capability_probes(tool) -> List[Probe]:
+    """Emit one semantically-matched probe per detected capability."""
+    probes: List[Probe] = []
+    for cap in tool.capabilities:
+        spec = CAPABILITY_INJECTION_PAYLOADS.get(cap)
+        if not spec:
+            continue
+        target = locate_param(tool, cap)
+        if target is None:
+            continue
+        kind, desc, payload, severity = spec
+        probes.append(_make_probe(tool, target.name, kind, desc, payload, severity))
+    return probes
+
+
+def _generic_probes(tool) -> List[Probe]:
+    """Emit generic cmd/sql/path probes across every string parameter."""
+    probes: List[Probe] = []
+    for param in tool.parameters:
+        if not is_string_param(param):
+            continue
+        for kind, desc, payload, severity in GENERIC_INJECTION_PAYLOADS:
+            probes.append(_make_probe(tool, param.name, kind, desc, payload, severity))
+    return probes
 
 
 def generate_injection_probes(sbom: SBOM, policy: Policy) -> List[Probe]:
-    """Generate injection probes for every string parameter of every tool.
+    """Generate injection probes for every tool.
 
-    Iterates all discovered tools (no allow-list filtering — an out-of-policy
-    tool's injection surface is just as worth exposing). For each string-typed
-    parameter, emits one probe per generic payload class.
+    A tool with detected capabilities gets semantically-matched payloads on its
+    relevant parameter(s). A tool with no capabilities gets the generic payload
+    suite on every string parameter.
     """
     probes: List[Probe] = []
-
     for tool in sbom.tools:
-        for param in tool.parameters:
-            if not _is_string_param(param.type):
-                continue
-            for kind, desc, payload, severity in INJECTION_PAYLOADS:
-                # json.dumps produces a double-quoted, escaped Python string
-                # literal — safe to splice into the exec'd command.
-                payload_literal = json.dumps(payload)
-                probes.append(
-                    Probe(
-                        id=f"inject_{tool.name}_{param.name}_{kind}",
-                        category="parameter",
-                        description=f"{desc} via {tool.name}.{param.name}",
-                        test_command=(
-                            f"agent.call_tool('{tool.name}', "
-                            f"{{'{param.name}': {payload_literal}}})"
-                        ),
-                        expected_outcome="Parameter rejected or sanitized",
-                        execution="agent",
-                        severity=severity,
-                    )
-                )
-
+        if tool.capabilities:
+            probes.extend(_capability_probes(tool))
+        else:
+            probes.extend(_generic_probes(tool))
     return probes

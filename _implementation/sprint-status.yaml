@@ -1,5 +1,5 @@
 # Sprint Status - APCV MVP (3 Weeks)
-# Last Updated: 2026-09-13
+# Last Updated: 2026-09-14
 #
 # NOTE: 2026-09-13 状态校准——此前 git 提交 ad1245e 声称 "all 8 stories implemented"
 # 与事实不符(2-2 实为 executor stub)。本文件已对照代码逐条核实,记录真实完成度。
@@ -143,6 +143,49 @@ development_status:
     completion_note: "完成(静态可靠子集)。SubAgent 模型 + SBOM.sub_agents + extract_subagents() 枚举所有 create_agent(tools=[...]) 声明及工具列表;变量引用标 unresolved。不做 who-invokes-whom 继承链追踪(隐式、静态不可靠)。6 个新测试,85 全量通过。"
 
   # 第③层'运行时内建'不单独立 story —— 见 epic-4.scope_note
+
+  # EPIC 5: Sprint 3 候选 - 安全验证深度增强（Deep Validation）
+  epic-5:
+    title: "Sprint 3: Security Validation Depth"
+    status: "in-progress"
+    stories_count: 3
+    scope_note: >
+      2026-09-14 完成一轮深度验证增强(已落地,非本 epic 的 backlog):①静态能力分类器
+      (AST sink 分析 → code_exec/file_read/file_write/network) ②深层 canary 探针
+      (哨兵生命周期,执行/文件读写已端到端验证) ③消灭假工具名(删静态规则库+rate_limit,
+      新增 SBOM 驱动 denied 探针) ④浅层 injection 按意图选语义 payload ⑤包级扫描进
+      apcv validate ⑥conformance 覆盖 filesystem/network 能力级。以下 3 个 story 为
+      本次遗留待办。
+
+  5-1-network-canary:
+    title: "Network Canary (Deep Tier 补全)"
+    epic: "Sprint 3: Security Validation Depth"
+    description: "补全 canary 深层探针的网络哨兵:容器内起 loopback 监听线程,注入 SSRF payload,边跑边听是否收到连接。机制与文件哨兵的事后检查不同,需在 _run_canary 中单独处理并发监听。"
+    status: "backlog"
+    last_updated: "2026-09-14"
+    spec_checkpoint: "CAP-3 深层观测补全:network canary"
+    story_file: ""
+    completion_note: "未开始。loopback 在 --network=none 下已实测可用(bind/listen/connect 全通);网络哨兵需边跑边听(连接瞬时),与文件哨兵事后检查不同。用户已选'先跳过',待后续补。"
+
+  5-2-package-dynamic-execution:
+    title: "Package-Level Dynamic Execution"
+    epic: "Sprint 3: Security Validation Depth"
+    description: "让 apcv validate --agent <目录> 支持动态探针执行(当前仅静态)。需把 agent 运行时依赖(httpx/langgraph 等)装进 probe 镜像 + package-aware ProbeHost(当前只 load 单文件)。"
+    status: "backlog"
+    last_updated: "2026-09-14"
+    spec_checkpoint: "CAP-3 扩展到包级 agent"
+    story_file: ""
+    completion_note: "未开始。目录模式当前在 CLI Step 5 显式降级为 static-only,并打印'not yet supported'提示。依赖:镜像需按包 install -e . + ProbeHost 需支持从包导入工具面。"
+
+  5-3-precision-boundaries:
+    title: "Filesystem/Network 精确边界匹配（数据流分析）"
+    epic: "Sprint 3: Security Validation Depth"
+    description: "conformance 当前仅能力级粗判(read_only vs file_write、network_enabled vs 用户可控外联)。精确匹配 denied_paths/allowed_paths/denied_domains/allowed_domains 需对工具函数体做数据流分析,判断运行时路径/域名是否落在策略边界内。"
+    status: "backlog"
+    last_updated: "2026-09-14"
+    spec_checkpoint: "CAP-4 精确边界(路径/域名级)"
+    story_file: ""
+    completion_note: "未开始。当前 ⑥ 只做能力级;具体路径/域名匹配 deferred。需数据流分析(常量折叠 + 参数流),是独立重活。"
 
 
 # STATUS DEFINITIONS:

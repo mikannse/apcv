@@ -63,13 +63,6 @@ class ParameterBoundary(BaseModel):
     constraints: List[ParameterConstraint] = Field(default_factory=list)
 
 
-class RateLimitBoundary(BaseModel):
-    """Rate limiting boundary"""
-    calls_per_minute: Optional[int] = None
-    calls_per_hour: Optional[int] = None
-    concurrent_limit: Optional[int] = None
-
-
 class Policy(BaseModel):
     """Complete policy definition"""
     model_config = ConfigDict(validate_assignment=True)

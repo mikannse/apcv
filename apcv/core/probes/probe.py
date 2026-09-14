@@ -8,7 +8,7 @@ class Probe(BaseModel):
     category: str = Field(
         ...,
         description="Probe category",
-        pattern="^(filesystem|tool|privilege|network|sub_agent|parameter|rate_limit)$"
+        pattern="^(filesystem|tool|privilege|network|sub_agent|parameter)$"
     )
     description: str = Field(..., description="Human-readable description")
     test_command: str = Field(..., description="Command to execute")
@@ -22,6 +22,11 @@ class Probe(BaseModel):
         default="high",
         description="Severity level",
         pattern="^(critical|high|medium|low)$"
+    )
+    canary: str = Field(
+        default="",
+        description="Canary type for deep probes (code_exec|file_read|file_write|network); "
+        "empty for shallow probes",
     )
 
 

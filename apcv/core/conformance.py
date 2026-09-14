@@ -2,6 +2,7 @@
 from typing import List, Dict, Any
 from apcv.core.utils.sbom import SBOM, Tool
 from apcv.core.policy.schema import Policy
+from apcv.core.probes.targeting import locate_param
 
 
 class Violation:
@@ -21,7 +22,13 @@ class ConformanceResult:
         self.compliance_score = 100
 
     def detect_violations(self):
-        """Detect violations between SBOM and policy"""
+        """Detect violations between SBOM and policy across all boundaries."""
+        self._detect_tool_violations()
+        self._detect_filesystem_violations()
+        self._detect_network_violations()
+
+    def _detect_tool_violations(self):
+        """Tool boundary: denied tools + allow-list (deny-by-default)."""
         if "tool" not in self.policy.boundaries:
             return
 
@@ -51,6 +58,59 @@ class ConformanceResult:
                         f"Tool '{tool.name}' not in allowed list",
                     )
                 )
+
+    def _detect_filesystem_violations(self):
+        """Filesystem boundary: read_only forbids file-write capability.
+
+        Precise path matching (denied_paths / allowed_paths) needs data-flow
+        analysis and is deferred; capability-level read_only is unambiguous.
+        """
+        fs = self.policy.boundaries.get("filesystem")
+        if not isinstance(fs, dict):
+            return
+        if not fs.get("read_only", False):
+            return
+
+        for tool in self.sbom.tools:
+            if "file_write" in tool.capabilities:
+                self.violations.append(
+                    Violation(
+                        "filesystem_read_only",
+                        f"Tool '{tool.name}' has file-write capability but "
+                        "policy requires a read-only filesystem",
+                        severity="high",
+                    )
+                )
+
+    def _detect_network_violations(self):
+        """Network boundary: network_enabled=false forbids arbitrary egress.
+
+        Only flag tools whose network target is user-controllable (a URL-like
+        parameter). Whitelisted tools that call a fixed internal endpoint
+        (e.g. search_help_articles -> settings.help_center_url) are not
+        arbitrary egress. denied_domains/allowed_domains matching needs
+        data-flow analysis and is deferred.
+        """
+        net = self.policy.boundaries.get("network")
+        if not isinstance(net, dict):
+            return
+        if net.get("network_enabled", False):
+            return
+
+        for tool in self.sbom.tools:
+            if "network" not in tool.capabilities:
+                continue
+            if locate_param(tool, "network") is None:
+                # No user-controllable URL parameter -> fixed internal call.
+                continue
+            self.violations.append(
+                Violation(
+                    "network_egress",
+                    f"Tool '{tool.name}' has user-controllable network egress "
+                    "but policy disables it",
+                    severity="high",
+                )
+            )
 
     def calculate_score(self) -> int:
         """Calculate compliance score (0-100)"""

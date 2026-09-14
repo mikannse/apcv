@@ -165,16 +165,18 @@ class IsolatedExecutor:
         # Mount the agent file read-only into the container and run the
         # entrypoint against it. The container runs with FIXED isolation
         # (non-root, no network) — the sandbox is a cage, not an enforcer.
-        run_args = build_docker_run_args(
-            policy,
-            self.image,
-            [
-                "--agent",
-                f"/agent/{agent_name}",
-                "--probe",
-                probe.test_command,
-            ],
-        )
+        command = [
+            "--agent",
+            f"/agent/{agent_name}",
+            "--probe",
+            probe.test_command,
+        ]
+        if probe.canary:
+            # Deep canary probe: entrypoint sets up a sentinel, runs the probe,
+            # then checks whether the sentinel was actually triggered.
+            command += ["--canary", probe.canary]
+
+        run_args = build_docker_run_args(policy, self.image, command)
         # build_docker_run_args appends image + command; insert the volume
         # mount BEFORE the image name.
         idx = run_args.index(self.image)

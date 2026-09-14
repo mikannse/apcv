@@ -20,6 +20,11 @@ class Tool(BaseModel):
     parameters: List[ToolParameter] = Field(default_factory=list)
     return_type: str = Field(default="Any", description="Return type")
     description: str = Field(default="", description="Tool description")
+    capabilities: List[str] = Field(
+        default_factory=list,
+        description="Dangerous capabilities detected in the tool body via AST "
+        "sink analysis: code_exec | file_read | file_write | network",
+    )
 
 
 class MCPServer(BaseModel):

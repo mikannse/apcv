@@ -5,8 +5,10 @@ from tempfile import NamedTemporaryFile
 from apcv.core.scanners.tool_scanner import ToolScanner
 from apcv.core.frameworks.langgraph_adapter import LangGraphAdapter
 from apcv.core.policy.validator import PolicyValidator
-from apcv.core.probes.library import ProbeLibrary
-from apcv.core.probes.generator import ProbeGenerator
+from apcv.core.probes.baseline import generate_baseline_probes
+from apcv.core.probes.injection import generate_injection_probes
+from apcv.core.probes.denied import generate_denied_tool_probes
+from apcv.core.probes.canary import generate_canary_probes
 from apcv.core.conformance import ConformanceResult
 
 
@@ -53,10 +55,13 @@ boundaries:
         policy = validator.load_policy(policy_path)
         assert policy.metadata.name == "Test Policy"
 
-        # Generate probes
-        library = ProbeLibrary()
-        generator = ProbeGenerator(library)
-        probes = generator.generate(policy)
+        # Generate probes (all SBOM-driven)
+        probes = (
+            generate_baseline_probes(sbom, policy)
+            + generate_injection_probes(sbom, policy)
+            + generate_denied_tool_probes(sbom, policy)
+            + generate_canary_probes(sbom, policy)
+        )
         assert len(probes) > 0
 
         # Check conformance

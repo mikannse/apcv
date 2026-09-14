@@ -40,8 +40,3 @@ boundaries:
     denied_domains:
       - 169.254.169.254
       - "*"
-
-  rate_limit:
-    calls_per_minute: 60
-    calls_per_hour: 2000
-    concurrent_limit: 8

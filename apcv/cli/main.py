@@ -8,8 +8,10 @@ import typer
 from apcv.core.scanners.tool_scanner import ToolScanner
 from apcv.core.frameworks.langgraph_adapter import LangGraphAdapter
 from apcv.core.policy.validator import PolicyValidator
-from apcv.core.probes.library import ProbeLibrary
-from apcv.core.probes.generator import ProbeGenerator
+from apcv.core.probes.baseline import generate_baseline_probes
+from apcv.core.probes.injection import generate_injection_probes
+from apcv.core.probes.denied import generate_denied_tool_probes
+from apcv.core.probes.canary import generate_canary_probes
 from apcv.core.conformance import ConformanceResult, Violation
 from apcv.core.execution.executor import IsolatedExecutor, DockerUnavailableError
 from apcv.core.execution.trace_model import ExecutionReport
@@ -33,7 +35,13 @@ def validate(
         typer.echo("📋 Step 1: Discovering tools...", err=True)
         adapter = LangGraphAdapter()
         scanner = ToolScanner()
-        sbom = scanner.scan(agent, adapter)
+        agent_path = Path(agent)
+        if agent_path.is_dir():
+            # A real enterprise agent is a whole codebase, not one file. Walk
+            # the package and merge every module's @tool into one SBOM.
+            sbom = scanner.scan_package(str(agent_path), adapter)
+        else:
+            sbom = scanner.scan(agent, adapter)
         typer.echo(f"✅ Found {len(sbom.tools)} tools", err=True)
 
         # 2. Load policy
@@ -42,25 +50,25 @@ def validate(
         policy_obj = validator.load_policy(policy)
         typer.echo(f"✅ Policy loaded: {policy_obj.metadata.name}", err=True)
 
-        # 3. Generate probes
+        # 3. Generate probes (all SBOM-driven)
         typer.echo("📋 Step 3: Generating probes...", err=True)
-        library = ProbeLibrary()
-        generator = ProbeGenerator(library)
-        probes = generator.generate(policy_obj)
         # Baseline probes record each declared tool's real behavior (audit
-        # evidence); they are derived from the SBOM, not the static rule lib.
-        from apcv.core.probes.baseline import generate_baseline_probes
-
+        # evidence); derived from the SBOM.
         baseline_probes = generate_baseline_probes(sbom, policy_obj)
         # Injection probes target each string parameter with a malicious
         # payload to detect parameter-validation gaps; also SBOM-derived.
-        from apcv.core.probes.injection import generate_injection_probes
-
         injection_probes = generate_injection_probes(sbom, policy_obj)
-        probes = probes + baseline_probes + injection_probes
+        # Denied-tool probes really invoke each policy-denied tool to confirm
+        # it is reachable at runtime (replaces the old hard-coded fake names).
+        denied_probes = generate_denied_tool_probes(sbom, policy_obj)
+        # Canary probes prove a dangerous action actually happened (deep tier),
+        # directed by each tool's statically-detected capabilities.
+        canary_probes = generate_canary_probes(sbom, policy_obj)
+        probes = baseline_probes + injection_probes + denied_probes + canary_probes
         typer.echo(
             f"✅ Generated {len(probes)} probes "
-            f"({len(baseline_probes)} baseline, {len(injection_probes)} injection)",
+            f"({len(baseline_probes)} baseline, {len(injection_probes)} injection, "
+            f"{len(denied_probes)} denied, {len(canary_probes)} canary)",
             err=True,
         )
 
@@ -73,6 +81,15 @@ def validate(
         execution_traces = []
         if skip_execution:
             typer.echo("⚠️  Skipping probe execution (static-only analysis)", err=True)
+        elif agent_path.is_dir():
+            # Package-mode dynamic execution needs the agent's runtime deps
+            # shipped into the probe image and a package-aware ProbeHost — a
+            # separate work stream. Static discovery + conformance still runs.
+            typer.echo(
+                "⚠️  Directory agent: dynamic probe execution not yet supported "
+                "for packages (static-only analysis)",
+                err=True,
+            )
         else:
             typer.echo("📋 Step 5: Executing probes...", err=True)
             try:
